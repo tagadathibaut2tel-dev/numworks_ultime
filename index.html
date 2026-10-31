@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NumWorks V7</title>
+<title>NumWorks V8</title>
 <style>
 :root{--yellow:#ffb531;--dark:#414141}
 *{box-sizing:border-box}
@@ -86,6 +86,20 @@ canvas{width:100%;flex:1;min-height:0}
 .k.sh.on{background:var(--yellow);color:#fff}
 .k.n{height:27px;font-size:14px;font-weight:500;border-radius:15px}
 .k.e{font-weight:700;color:#333}
+
+.launch{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:9px;padding:12px;text-align:center;font-family:Helvetica,Arial,sans-serif}
+.launch .launch-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;background:#f0f0f0;font-size:25px;font-weight:700;color:#444}
+.launch p{font-size:9px;line-height:1.4;color:#666;margin:0;max-width:210px}
+.launch a{display:inline-block;padding:7px 15px;border-radius:16px;background:#ffb531;
+  color:#fff;text-decoration:none;font-size:10px;font-weight:700;box-shadow:0 1.5px 0 #c98a12}
+.launch .hint{font-size:8px;color:#999}
+
+.webapp{display:flex;flex-direction:column;flex:1;min-height:0;padding:4px;gap:4px}
+.webframe{width:100%;flex:1;min-height:0;border:1px solid #d4d4d4;border-radius:3px;background:#fff}
+.webtools{display:flex;align-items:center;justify-content:space-between;gap:5px;font:8px Helvetica,Arial,sans-serif;color:#777}
+.webtools a{color:#555;text-decoration:none;border:1px solid #ddd;border-radius:9px;padding:3px 7px;background:#fafafa}
 </style>
 </head>
 <body>
@@ -110,7 +124,15 @@ const APPS=[
 ['inf','Inférence',ic(0,'<path d="M5 36c7 0 8-24 17-24s10 24 17 24" fill="none" stroke="#777" stroke-width="3"/><path d="M14 38V20M30 38V20" stroke="#ffb531" stroke-width="3"/><path d="M14 29h16" stroke="#ffb531" stroke-width="2.5"/>')],
 ['fin','Finance',ic(0,'<circle cx="22" cy="22" r="16" fill="#ffb531"/><circle cx="22" cy="22" r="12" fill="none" stroke="#fff" stroke-width="1.5"/><text x="22" y="29" font-size="19" font-weight="700" fill="#fff" text-anchor="middle">€</text>')],
 ['elem','Éléments',ic(1,'<rect x="8" y="8" width="28" height="28" rx="3" fill="none" stroke="#ffb531" stroke-width="2.5"/><text x="22" y="27" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">Fe</text><text x="12" y="16" font-size="6" fill="#ffb531">26</text>')],
-['set','Paramètres',ic(0,'<circle cx="22" cy="22" r="9" fill="none" stroke="#777" stroke-width="5" stroke-dasharray="4 3"/><circle cx="22" cy="22" r="3" fill="#ffb531"/>')]];
+['set','Paramètres',ic(0,'<circle cx="22" cy="22" r="9" fill="none" stroke="#777" stroke-width="5" stroke-dasharray="4 3"/><circle cx="22" cy="22" r="3" fill="#ffb531"/>')],
+['youtube','YouTube',ic(0,'<rect x="4" y="10" width="36" height="24" rx="7" fill="#e62117"/><path d="M19 16l11 6-11 6z" fill="#fff"/>')],
+['google','Google',ic(0,'<text x="22" y="32" font-size="31" font-family="Arial" font-weight="700" text-anchor="middle" fill="#4285f4">G</text>')],
+['chatgpt','ChatGPT',ic(1,'<path d="M22 7a8 8 0 0 0-7 4 8 8 0 0 0-4 13 8 8 0 0 0 8 10 8 8 0 0 0 14-5 8 8 0 0 0 1-14A8 8 0 0 0 22 7z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/><path d="M22 12v20M13 17l18 10M13 27l18-10" stroke="#fff" stroke-width="2" stroke-linecap="round"/>')]];
+const EXTERNAL_APPS={
+  youtube:{name:'YouTube',url:'https://www.youtube.com/',symbol:'▶',note:'Regarder des vidéos sur YouTube.'},
+  google:{name:'Google',url:'https://www.google.com/',symbol:'G',note:'Effectuer une recherche sur le Web avec Google.'},
+  chatgpt:{name:'ChatGPT',url:'https://chatgpt.com/',symbol:'✳',note:'Ouvrir ChatGPT dans ton navigateur.'}
+};
 const IMPL=['calc','graph','files','stats','proba','eq','seq','reg','set','py','inf','fin','elem'];
 Object.assign(S,{q:{t:'x^2',i:3},r:{t:'',i:0},pts:[],deg:false,ssel:0,vars:{},alpha:false,clip:'',tb:null,n:{t:'',i:0},y:{t:'',i:0},nm:-1,msel:0,nr:null,pym:'edit',pout:[],el:0});
 const BUF={inf:'n',fin:'n',py:'y',calc:'c',graph:'g',eq:'e',stats:'s',proba:'p',seq:'q',reg:'r'};
@@ -188,12 +210,16 @@ function render(){
     h=bar('Paramètres')+`<div class="f${S.ssel===0?' sel':''}">Unité d'angle : ${S.deg?'Degré':'Radian'}</div><div class="f${S.ssel===1?' sel':''}">Fichiers ›</div><div class="f" style="font-size:9px;color:#888">▲▼ : choisir · OK : valider</div>`;
   }else if(S.app==='files'){
     h=bar('Fichiers')+'<div style="flex:1;overflow:auto">'+(S.files.length?S.files.map((f,i)=>`<div class="f${i===S.fsel?' sel':''}">▤ ${esc(f)}</div>`).join(''):'<div class="f">Aucun fichier · EXE : nouveau</div>')+'</div>';
-  }else if(S.app==='py')h=pyView(bar);else if(S.app==='inf'||S.app==='fin')h=menuView(bar);else if(S.app==='elem')h=elemView(bar);else h=bar(S.app)+'<div class="body" style="justify-content:center;align-items:center;text-align:center;font-family:Helvetica,Arial,sans-serif;font-size:11px">Application non disponible<br><span style="font-size:9px;color:#888">pas encore implémentée</span></div>';
+  }else if(S.app==='py')h=pyView(bar);else if(S.app==='inf'||S.app==='fin')h=menuView(bar);else if(S.app==='elem')h=elemView(bar);
+  else if(EXTERNAL_APPS[S.app]){
+    const x=EXTERNAL_APPS[S.app];
+    h=bar(x.name)+'<div class="webapp"><iframe class="webframe" title="'+x.name+'" src="'+x.url+'" loading="lazy" referrerpolicy="no-referrer" allow="clipboard-read; clipboard-write"></iframe><div class="webtools"><span>Si le site bloque l’iframe :</span><a href="'+x.url+'" target="_blank" rel="noopener noreferrer">Ouvrir dans un onglet ↗</a></div></div>';
+  }else h=bar(S.app)+'<div class="body" style="justify-content:center;align-items:center;text-align:center;font-family:Helvetica,Arial,sans-serif;font-size:11px">Application non disponible<br><span style="font-size:9px;color:#888">pas encore implémentée</span></div>';
   if(S.tb&&BUF[S.app]){const it=S.tb.items,st=Math.max(0,Math.min(S.tb.i-5,it.length-9));
     h+=`<div class="tbm"><div class="bar"><span></span><span>${S.tb.title}</span><span></span></div>`+it.slice(st,st+9).map((x,j)=>`<div class="f${st+j===S.tb.i?' sel':''}">${esc(x[0])}</div>`).join('')+'</div>'}
   el.innerHTML=h;
   el.querySelectorAll('.app').forEach(a=>a.onclick=()=>{S.sel=+a.dataset.i;press('OK')});
-  homeScroll();
+  pyBlit();homeScroll();
 }
 function homeScroll(){
   const g=document.querySelector('#scr .grid');if(!g)return;
@@ -204,65 +230,138 @@ function homeScroll(){
   th.style.top=(g.scrollTop/g.scrollHeight*100)+'%';
 }
 /* ===== Python (sous-ensemble traduit en JavaScript) ===== */
-const PYTB=[['def  fonction','def f(x):'],['if  condition','if '],['elif','elif '],['else','else:'],['for  in range','for i in range('],['while','while '],['return','return '],['print(','print('],['range(','range('],['len(','len('],['import math','import math'],['#  commentaire','#'],['and','and '],['or','or '],['not','not '],['==','=='],['!=','!='],['**  puissance','**'],['//  division entière','//'],['%  reste','%'],['True','True'],['False','False']];
-const PYDEF='# Script Python\nfor i in range(5):\n    print(i*i)\n';
+const PYTB=[['def  fonction','def f(x):'],['if  condition','if '],['elif','elif '],['else','else:'],['for  in range','for i in range('],['while','while '],['return','return '],['print(','print('],['range(','range('],['len(','len('],['import math','import math'],['#  commentaire','#'],['and','and '],['or','or '],['not','not '],['==','=='],['!=','!='],['**  puissance','**'],['//  division entière','//'],['%  reste','%'],['True','True'],['False','False'],['import kandinsky as kd','import kandinsky as kd'],['kd.fill_rect(','kd.fill_rect('],['kd.draw_string(','kd.draw_string('],['kd.set_pixel(','kd.set_pixel('],['import random as rd','import random as rd'],['rd.randint(','rd.randint('],['from ion import *','from ion import *'],['keydown(KEY_OK)','keydown(KEY_OK)'],['import time','import time'],['time.sleep(','time.sleep(']];
+const PYDEF='import kandinsky as kd\nimport random as rd\n\ntaille = rd.randint(40, 80)\nkd.fill_rect(20, 20, taille, taille, (255, 50, 120))\nkd.draw_string("Trouve le carre !", 20, 120)\nprint("Modules NW charges !")\n';
 try{S.y.t=localStorage.getItem('nw_py')||PYDEF}catch(e){S.y.t=PYDEF}S.y.i=S.y.t.length;
 function pySave(){try{localStorage.setItem('nw_py',S.y.t)}catch(e){}}
 function pyPos(){const b=S.y,ls=b.t.split('\n');let p=0,l=0;while(l<ls.length-1&&b.i>p+ls[l].length){p+=ls[l].length+1;l++}return{ls,l,p,c:b.i-p}}
 function pyMove(a){const{ls,l,c}=pyPos(),l2=l+(a==='UP'?-1:1);if(l2<0||l2>=ls.length)return;let st=0;for(let k=0;k<l2;k++)st+=ls[k].length+1;S.y.i=st+Math.min(c,ls[l2].length)}
 function pyView(bar){
+  if(S.pym==='out'&&S.pcv&&S.pshow==='cv')return '<canvas id="pycv" width="320" height="222" style="position:absolute;inset:0;width:320px;height:222px;z-index:5"></canvas>';
   if(S.pym==='out')return bar('Console · BACK : script')+'<div class="body" style="justify-content:flex-start;font-size:10px;line-height:12px;white-space:pre-wrap">'+S.pout.slice(-15).map(esc).join('\n')+'</div>';
   const{ls,l,c}=pyPos(),st=Math.max(0,l-11);
   return bar('Script · OK : exécuter')+'<div class="body" style="justify-content:flex-start;font-size:10px;line-height:13px;white-space:pre;padding:3px 6px">'+ls.slice(st,st+14).map((x,k)=>st+k===l?esc(x.slice(0,c))+'<span class="cu"></span>'+esc(x.slice(c)):(esc(x)||' ')).join('\n')+'</div>';
 }
-function pyTr(s){
+/* ===== Moteur Python v2 : traduction vers JavaScript asynchrone ===== */
+const AsyncFn=Object.getPrototypeOf(async function(){}).constructor;
+const _mc=new MessageChannel();let _rs=[];_mc.port1.onmessage=()=>{const r=_rs;_rs=[];r.forEach(f=>f())};
+const yieldUI=()=>new Promise(r=>{_rs.push(r);_mc.port2.postMessage(0)});
+const pyChk=()=>{if(S.pstop)throw new Error('KeyboardInterrupt')};
+function pyBlit(){const c=document.getElementById('pycv');if(c&&S.pcan)c.getContext('2d').drawImage(S.pcan,0,0)}
+let _lr=0;function pyRefresh(){if(Date.now()-_lr<60)return;_lr=Date.now();if(S.app==='py'&&S.pym==='out'){if(S.pcv&&S.pshow==='cv')pyBlit();else render()}}
+/* touches (module ion) */
+S.held={};
+const KM={UP:'KEY_UP',DOWN:'KEY_DOWN',LEFT:'KEY_LEFT',RIGHT:'KEY_RIGHT',OK:'KEY_OK',EXE:'KEY_EXE',BACK:'KEY_BACK',HOME:'KEY_HOME',DEL:'KEY_BACKSPACE',SHIFT:'KEY_SHIFT',ALPHA:'KEY_ALPHA','+':'KEY_PLUS','−':'KEY_MINUS','×':'KEY_MULTIPLICATION','÷':'KEY_DIVISION','.':'KEY_DOT','(':'KEY_LEFTPARENTHESIS',')':'KEY_RIGHTPARENTHESIS',Ans:'KEY_ANS','ᴇ':'KEY_EE','π':'KEY_PI','√(':'KEY_SQRT','^2':'KEY_SQUARE','sin(':'KEY_SINE','cos(':'KEY_COSINE','tan(':'KEY_TANGENT','ln(':'KEY_LN','log(':'KEY_LOG','e^(':'KEY_EXP','^':'KEY_POWER',',':'KEY_COMMA',i:'KEY_IMAGINARY',x:'KEY_XNT','@var':'KEY_VAR','@toolbox':'KEY_TOOLBOX'};
+const PCK={ArrowUp:['KEY_UP'],ArrowDown:['KEY_DOWN'],ArrowLeft:['KEY_LEFT'],ArrowRight:['KEY_RIGHT'],Enter:['KEY_OK','KEY_EXE'],Escape:['KEY_HOME'],Backspace:['KEY_BACKSPACE'],'+':['KEY_PLUS'],'-':['KEY_MINUS'],'*':['KEY_MULTIPLICATION'],'/':['KEY_DIVISION'],'.':['KEY_DOT'],'(':['KEY_LEFTPARENTHESIS'],')':['KEY_RIGHTPARENTHESIS']};
+'ZERO ONE TWO THREE FOUR FIVE SIX SEVEN EIGHT NINE'.split(' ').forEach((n,i)=>{KM[i]='KEY_'+n;PCK[i]=['KEY_'+n]});
+const _hold=(ks,v)=>ks.forEach(k=>{if(v)S.held[k]=true;else setTimeout(()=>{S.held[k]=false},70)});
+addEventListener('keydown',e=>_hold(PCK[e.key]||[],true));
+addEventListener('keyup',e=>_hold(PCK[e.key]||[],false));
+document.getElementById('keys').addEventListener('pointerdown',e=>{const b=e.target.closest('button'),k=b&&KM[b.dataset.a];if(k){_hold([k],true);S.lastv=k}});
+addEventListener('pointerup',()=>{if(S.lastv){_hold([S.lastv],false);S.lastv=null}});
+const ION={};[...Object.values(KM),...Object.values(PCK).flat()].forEach(k=>ION[k]=k);
+ION.keydown=async k=>{await yieldUI();pyChk();pyRefresh();return !!S.held[k]};
+/* méthodes Python sur les types JS */
+(()=>{const d=(C,o)=>Object.keys(o).forEach(n=>{if(!C.prototype['__py_'+n])Object.defineProperty(C.prototype,n,{value:o[n],enumerable:false,writable:true,configurable:true})});
+ d(Array,{append(x){this.push(x)},insert(i,x){this.splice(i,0,x)},remove(x){const i=this.indexOf(x);if(i<0)throw new Error('ValueError: list.remove(x): x not in list');this.splice(i,1)},index(x){const i=this.indexOf(x);if(i<0)throw new Error('ValueError: not in list');return i},count(x){return this.filter(v=>v===x).length},extend(l){this.push(...l)},copy(){return[...this]},clear(){this.length=0}});
+ const so=Array.prototype.sort;Object.defineProperty(Array.prototype,'sort',{value:function(f){return so.call(this,f||((a,b)=>a>b?1:a<b?-1:0))},writable:true,configurable:true});
+ d(String,{upper(){return this.toUpperCase()},lower(){return this.toLowerCase()},strip(){return this.trim()},lstrip(){return this.trimStart()},rstrip(){return this.trimEnd()},startswith(s){return this.startsWith(s)},endswith(s){return this.endsWith(s)},find(s){return this.indexOf(s)},join(l){return l.join(this)},isdigit(){return /^\d+$/.test(this)},count(s){return this.split(s).length-1},
+   format(...a){let i=0;return this.replace(/\{(\d*)(?::\.(\d+)f)?\}/g,(m,n,p)=>{const v=a[n===''?i++:+n];return p?(+v).toFixed(p):typeof v==='string'?v:String(v)})}});
+ d(Object,{keys(){return Object.keys(this)},values(){return Object.values(this)},items(){return Object.entries(this)},get(k,def=null){return k in this?this[k]:def}});
+})();
+/* ---- traduction d'une ligne ---- */
+const PYKW=['in','return','and','or','not','if','elif','while','is','else','await'];
+function pyTr(s,fns){
   let q=null,o='';for(const ch of s){if(q){if(ch===q)q=null}else if(ch==='"'||ch==="'")q=ch;else if(ch==='#')break;o+=ch}
-  return o.split(/(f?"[^"\n]*"|f?'[^'\n]*')/).map((p,i)=>{
-    if(i%2){if(p[0]==='f')return'`'+p.slice(2,-1).replace(/\{([^}:]*)(?::\.(\d+)f)?\}/g,(m,e,d)=>'${'+(d?'('+e+').toFixed('+d+')':'pystr('+e+')')+'}')+'`';return p}
-    return p.replace(/([\w.]+|\([^()]*\))\s*\/\/\s*([\w.]+|\([^()]*\))/g,'Math.floor($1/$2)').replace(/\band\b/g,'&&').replace(/\bor\b/g,'||').replace(/\bnot\b/g,'!').replace(/\bTrue\b/g,'true').replace(/\bFalse\b/g,'false').replace(/\bNone\b/g,'null').replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/ᴇ/g,'e').replace(/π/g,'math.pi').replace(/\^/g,'**')}).join('');
+  const SS=[];o=o.replace(/(f?"[^"\n]*"|f?'[^'\n]*')/g,m=>'__S'+(SS.push(m)-1)+'__');
+  const kw=/^\s*(for|if|elif|while|def|else)\b/.test(o),isDef=/^\s*def\b/.test(o);let m;
+  const tern=r=>{const t=r.match(/^(.+?)\s+if\s+(.+?)\s+else\s+(.+)$/);return t?'('+t[2]+')?('+t[1]+'):('+tern(t[3])+')':r};
+  if(!kw&&(m=o.match(/^(\s*return\s+|\s*[\w.\[\]]+\s*=(?!=)\s*)(.+)$/))&&/\sif\s.+\selse\s/.test(m[2]))o=m[1]+tern(m[2]);
+  o=o.replace(/\[([^\[\]]+?)\s+for\s+([\w,\s]+?)\s+in\s+([^\[\]]+?)(?:\s+if\s+([^\[\]]+?))?\]/g,(_,e,v,it,c)=>{v=v.trim();const p=v.includes(',')?'['+v+']':v;return '(await __lc('+it+','+(c?'async ('+p+')=>('+c+')':'null')+',async ('+p+')=>('+e+')))'});
+  if(!/^\s*for\b/.test(o)){const N='([\\w.]+(?:\\([^()]*\\))?(?:\\[[^\\]]*\\])?|\\[[^\\]]*\\])';o=o.replace(new RegExp(N+'\\s+not\\s+in\\s+'+N,'g'),'!__in($1,$2)').replace(new RegExp(N+'\\s+in\\s+'+N,'g'),'__in($1,$2)')}
+  o=o.replace(/\blambda\s*([\w,\s]*):\s*/g,'($1)=>').replace(/\bis\s+not\b/g,'!==').replace(/\bis\b/g,'===').replace(/\band\b/g,'&&').replace(/\bor\b/g,'||').replace(/\bnot\b/g,'!')
+   .replace(/\bTrue\b/g,'true').replace(/\bFalse\b/g,'false').replace(/\bNone\b/g,'null').replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/ᴇ/g,'e').replace(/π/g,'math.pi').replace(/\^/g,'**')
+   .replace(/\.split\(\)/g,'.trim().split(/\\s+/)').replace(/\.replace\(/g,'.replaceAll(');
+  const AT='(?:[\\w.]+(?:\\([^()]*\\))?|\\([^()]*\\))',PW='(?:\\s*\\*\\*\\s*-?'+AT+')*';
+  const L='(?<![*/%]\\s*)((?:(?<![\\w.)\\]]\\s*)-)?(?<![\\w.])'+AT+PW+'(?:\\s*(?:\\*|/(?!/))\\s*'+AT+PW+')*)\\s*',R='\\s*(-?'+AT+PW+')';
+  o=o.replace(new RegExp(L+'//'+R,'g'),'__fd($1,$2)').replace(new RegExp(L+'%'+R,'g'),'__mod($1,$2)').replace(/\/\//g,'/');
+  if(/^\s*print\(/.test(o)){const kws=[];o=o.replace(/,\s*(sep|end)\s*=\s*(__S\d+__|[\w.]+)/g,(_,k,v)=>{kws.push(k+':'+v);return ''});if(kws.length)o=o.replace(/^(\s*)print\(/,'$1printk({'+kws.join(',')+'},')}
+  if(!isDef)['ion.keydown','keydown','time.sleep','sleep',...fns].forEach(n=>{o=o.replace(new RegExp('(?<![\\w.])'+n.replace('.','\\.')+'\\s*\\(','g'),x=>'await '+x)});
+  const out=[],st=[];
+  const call=()=>{const pre=out.join('').replace(/\s+$/,''),w=pre.match(/(\w+)$/);return w?!PYKW.includes(w[1]):/[)\]]$/.test(pre)};
+  for(let i=0;i<o.length;i++){const ch=o[i];
+    if(ch==='('||ch==='['||ch==='{'){st.push({i:out.length,c:ch==='('&&call(),k:ch==='(',m:false});out.push(ch)}
+    else if(ch===','){if(st.length)st[st.length-1].m=true;out.push(ch)}
+    else if(ch===')'||ch===']'||ch==='}'){const e=st.pop();if(e&&e.k&&!e.c&&e.m&&!/^\s*=>/.test(o.slice(i+1))){out[e.i]='__t([';out.push('])')}else out.push(ch)}
+    else out.push(ch)}
+  return out.join('').replace(/__S(\d+)__/g,(_,n)=>{const p=SS[n];if(p[0]==='f')return'`'+p.slice(2,-1).replace(/`/g,'\\`').replace(/\{([^}:]*)(?::\.(\d+)f)?\}/g,(m,e,d)=>'${'+(d?'('+e+').toFixed('+d+')':'__ps('+e+')')+'}')+'`';return p});
 }
 function py2js(src){
-  const out=[],st=[];
+  const fns=[...src.matchAll(/^\s*def\s+(\w+)/gm)].map(m=>m[1]),res=[],st=[];
   for(const raw of src.replace(/\t/g,'    ').split('\n')){
-    const code=pyTr(raw).trim();if(!code)continue;
-    const ind=raw.match(/^ */)[0].length,cl=[];
-    while(st.length&&ind<=st[st.length-1].ind)cl.push(st.pop().def?'};':'}');
-    const inDef=st.some(x=>x.def),open=(t,def)=>{out.push(t);st.push({ind,def})};
-    let m=code.match(/^elif\s+(.*):$/),el=m||/^else\s*:$/.test(code);
-    if(el){if(cl.length)cl.pop();out.push(...cl);out.push((cl.length+1?'}':'')+(m?'else if('+m[1]+'){':'else{'));st.push({ind});continue}
-    out.push(...cl);
-    if(m=code.match(/^def\s+(\w+)\s*\((.*)\)\s*:$/))open(m[1]+'=function('+m[2]+'){',1);
-    else if(m=code.match(/^if\s+(.*):$/))open('if('+m[1]+'){');
-    else if(m=code.match(/^while\s+(.*):$/))open('while(__g()&&('+m[1]+')){');
-    else if(m=code.match(/^for\s+(.+?)\s+in\s+(.+):$/))open('for(var '+(m[1].includes(',')?'['+m[1]+']':m[1])+' of '+m[2]+'){');
-    else if(/^(import|from|global|pass)\b/.test(code))out.push(';');
+    const code=pyTr(raw,fns).trim();if(!code){res.push('');continue}
+    const ind=raw.match(/^ */)[0].length;let cl='';
+    while(st.length&&ind<=st[st.length-1].ind)cl+=st.pop().def?'};':'}';
+    const inDef=st.some(x=>x.def),open=(t,def)=>{st.push({ind,def,g:new Set()});return cl+t};let m,r;
+    if(m=code.match(/^elif\s+(.*):$/))r=open('else if('+m[1]+'){');
+    else if(/^else\s*:$/.test(code))r=open('else{');
+    else if(m=code.match(/^def\s+(\w+)\s*\((.*)\)\s*:$/))r=open(m[1]+'=async function('+m[2]+'){',1);
+    else if(m=code.match(/^if\s+(.*):$/))r=open('if('+m[1]+'){');
+    else if(m=code.match(/^while\s+(.*):$/))r=open('while(__g()&&('+m[1]+')){');
+    else if(m=code.match(/^for\s+(.+?)\s+in\s+(.+):$/))r=open('for(var '+(m[1].includes(',')?'['+m[1]+']':m[1])+' of '+m[2]+'){');
+    else if(m=code.match(/^global\s+(.*)$/)){const d=[...st].reverse().find(x=>x.def);if(d)m[1].split(',').forEach(n=>d.g.add(n.trim()));r=cl+';'}
+    else if(m=code.match(/^import\s+(\w+)(?:\s+as\s+(\w+))?$/))r=cl+"__imp0('"+m[1]+"'"+(m[2]?",'"+m[2]+"'":'')+');';
+    else if(m=code.match(/^from\s+(\w+)\s+import\s+(.+)$/))r=cl+"__imp('"+m[1]+"','"+m[2].replace(/\s/g,'')+"');";
+    else if(/^pass\b/.test(code))r=cl+';';
     else if(m=code.match(/^([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*=(?!=)\s*(.*)$/)){
-      const tup=m[1].includes(','),r=tup&&m[2].includes(',')&&!/[(\[]/.test(m[2])?'['+m[2]+']':m[2];
-      out.push((inDef?'var ':'')+(tup?'['+m[1]+']':m[1])+'='+r+';')}
-    else out.push(code+';');
-  }
-  while(st.length)out.push(st.pop().def?'};':'}');
-  return out.join('\n');
+      const names=m[1].split(',').map(x=>x.trim()),tup=names.length>1,glob=names.some(n=>st.some(x=>x.def&&x.g.has(n)));
+      const rhs=tup&&m[2].includes(',')&&!/[(\[]/.test(m[2])?'['+m[2]+']':m[2];
+      r=cl+(inDef&&!glob?'var ':'')+(tup?'['+m[1]+']':m[1])+'='+rhs+';'}
+    else r=cl+code+';';
+    res.push(r)}
+  if(st.length)res[res.length-1]+=st.reverse().map(x=>x.def?'};':'}').join('');
+  return res.join('\n');
 }
-function pyRun(){
-  const out=[];let cnt=0;const rp=v=>v==null?'None':v===true?'True':v===false?'False':typeof v==='string'?"'"+v+"'":Array.isArray(v)?'['+v.map(rp).join(', ')+']':String(v);
-  const ps=v=>typeof v==='string'?v:rp(v),M=Math;
-  const BI={Math:M,pystr:ps,__g:()=>{if(++cnt>3e6)throw new Error('Boucle trop longue : arrêt');return true},
-    print:(...a)=>{out.push(a.map(ps).join(' '))},len:x=>x.length,
+async function pyRun(){
+  if(S.prun)return;
+  const out=[],M=Math;let cur='',cnt=0;S.pstop=false;
+  const rp=v=>v==null?'None':v===true?'True':v===false?'False':typeof v==='string'?"'"+v+"'":Array.isArray(v)?(v.t?'('+v.map(rp).join(', ')+(v.length===1?',':'')+')':'['+v.map(rp).join(', ')+']'):typeof v==='number'?(Number.isNaN(v)?'nan':v===Infinity?'inf':v===-Infinity?'-inf':String(v)):typeof v==='function'?'<function>':typeof v==='object'?'{'+Object.keys(v).map(k=>rp(k)+': '+rp(v[k])).join(', ')+'}':String(v);
+  const ps=v=>typeof v==='string'?v:rp(v);
+  const printk=(kw,...a)=>{cur+=a.map(ps).join(kw.sep??' ')+(kw.end??'\n');let i;while((i=cur.indexOf('\n'))>=0){out.push(cur.slice(0,i));cur=cur.slice(i+1)}};
+  const cv=S.pcan=document.createElement('canvas');cv.width=320;cv.height=222;const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,320,222);
+  const col=c=>Array.isArray(c)?'rgb('+c.slice(0,3).map(v=>M.max(0,M.min(255,M.round(v)))).join(',')+')':String(c);
+  const kandinsky={color:(r,g,b)=>[r,g,b],fill_rect:(x,y,w,h,c)=>{cx.fillStyle=col(c);cx.fillRect(x,y,w,h)},set_pixel:(x,y,c)=>{cx.fillStyle=col(c);cx.fillRect(x,y,1,1)},get_pixel:(x,y)=>[...cx.getImageData(x,y,1,1).data.slice(0,3)],
+    draw_string:(t,x,y,fg='black',bg='white')=>{cx.font='14px "Courier New",monospace';cx.textBaseline='top';t=ps(t);cx.fillStyle=col(bg);cx.fillRect(x,y,cx.measureText(t).width,16);cx.fillStyle=col(fg);cx.fillText(t,x,y)}};
+  const math={sqrt:M.sqrt,sin:M.sin,cos:M.cos,tan:M.tan,asin:M.asin,acos:M.acos,atan:M.atan,atan2:M.atan2,exp:M.exp,floor:M.floor,ceil:M.ceil,trunc:M.trunc,fabs:M.abs,pi:M.PI,e:M.E,tau:2*M.PI,inf:Infinity,isnan:Number.isNaN,
+    log:(x,b)=>b?M.log(x)/M.log(b):M.log(x),log10:M.log10,log2:M.log2,factorial:n=>{let r=1;for(let i=2;i<=n;i++)r*=i;return r},gcd:(a,b)=>{while(b)[a,b]=[b,a%b];return M.abs(a)},pow:M.pow,hypot:M.hypot,radians:x=>x*M.PI/180,degrees:x=>x*180/M.PI};
+  const random={random:M.random,randint:(a,b)=>a+M.floor(M.random()*(b-a+1)),uniform:(a,b)=>a+M.random()*(b-a),choice:l=>l[M.floor(M.random()*l.length)],randrange:(a,b)=>b===undefined?M.floor(M.random()*a):a+M.floor(M.random()*(b-a)),seed:()=>{}};
+  const time={sleep:async s=>{pyBlit();await new Promise(r=>setTimeout(r,s*1000));pyChk();pyRefresh()},monotonic:()=>performance.now()/1000};
+  const MODS={math,random,time,kandinsky,ion:ION},store={};
+  const BI={Math:M,__ps:ps,printk,print:(...a)=>printk({},...a),__g:()=>{if(++cnt>3e6)throw new Error('Boucle trop longue : arrêt');return true},
+    __t:a=>{a.t=1;return a},__in:(a,b)=>typeof b==='string'?b.includes(a):Array.isArray(b)?b.some(x=>x===a):a in b,
+    __fd:(a,b)=>{if(b===0)throw new Error('ZeroDivisionError: division by zero');return M.floor(a/b)},
+    __mod:(a,b)=>{if(typeof a==='string'){let i=0;const A=Array.isArray(b)?b:[b];return a.replace(/%(?:\.(\d+))?([dsif%])/g,(m,d,t)=>{if(t==='%')return'%';const v=A[i++];return t==='f'?(+v).toFixed(d===undefined?6:d):t==='s'?ps(v):String(M.trunc(v))})}if(b===0)throw new Error('ZeroDivisionError: modulo by zero');return((a%b)+b)%b},
+    __lc:async(it,c,f)=>{const r=[];for(const v of Array.from(it)){if(!c||await c(v))r.push(await f(v))}return r},
+    __imp0:(m,a)=>{if(!MODS[m])throw new Error("ImportError: no module named '"+m+"'");store[a||m]=MODS[m]},
+    __imp:(m,n)=>{const mod=MODS[m];if(!mod)throw new Error("ImportError: no module named '"+m+"'");(n==='*'?Object.keys(mod):n.split(',')).forEach(k=>{if(!(k in mod))throw new Error("ImportError: cannot import name '"+k+"'");store[k]=mod[k]})},
+    len:x=>x.length!==undefined?x.length:Object.keys(x).length,
     range:(a,b,c)=>{if(b===undefined){b=a;a=0}c=c||1;const r=[];for(let i=a;c>0?i<b:i>b;i+=c)r.push(i);return r},
-    int:x=>M.trunc(Number(x)),float:Number,str:ps,bool:Boolean,list:x=>[...x],abs:M.abs,sum:l=>l.reduce((s,x)=>s+x,0),
-    min:(...a)=>M.min(...(a.length==1?a[0]:a)),max:(...a)=>M.max(...(a.length==1?a[0]:a)),
-    round:(x,n=0)=>M.round(x*10**n)/10**n,sorted:l=>[...l].sort((a,b)=>a>b?1:a<b?-1:0),
-    enumerate:l=>[...l].map((x,i)=>[i,x]),zip:(a,b)=>a.map((x,i)=>[x,b[i]]),input:p=>prompt(p)||'',
-    math:{sqrt:M.sqrt,sin:M.sin,cos:M.cos,tan:M.tan,asin:M.asin,acos:M.acos,atan:M.atan,exp:M.exp,floor:M.floor,ceil:M.ceil,fabs:M.abs,pi:M.PI,e:M.E,
-      log:(x,b)=>b?M.log(x)/M.log(b):M.log(x),log10:M.log10,factorial:n=>{let r=1;for(let i=2;i<=n;i++)r*=i;return r},
-      gcd:(a,b)=>{while(b)[a,b]=[b,a%b];return M.abs(a)},pow:M.pow,hypot:M.hypot,radians:x=>x*M.PI/180,degrees:x=>x*180/M.PI},
-    random:{random:M.random,randint:(a,b)=>a+M.floor(M.random()*(b-a+1))}};
-  [[Array,'append',function(x){this.push(x)}],[String,'upper',function(){return this.toUpperCase()}],[String,'lower',function(){return this.toLowerCase()}],[String,'join',function(l){return l.join(this)}]]
-    .forEach(([C,n,f])=>{if(!C.prototype[n])Object.defineProperty(C.prototype,n,{value:f,enumerable:false})});
-  const env=new Proxy({},{has:()=>true,get:(t,k)=>{if(typeof k==='symbol')return undefined;if(k in t)return t[k];if(k in BI)return BI[k];throw new Error("name '"+k+"' is not defined")}});
-  try{new Function('__e','with(__e){'+py2js(S.y.t)+'\n}')(env)}catch(e){out.push(e instanceof SyntaxError?'Erreur de syntaxe':'Erreur : '+(e.message||e))}
-  S.pout=out.length?out:['(aucune sortie)'];S.pym='out';
+    int:x=>{const v=typeof x==='string'?parseInt(x,10):M.trunc(x);if(Number.isNaN(v))throw new Error("ValueError: invalid literal for int()");return v},float:x=>{const v=Number(x);if(Number.isNaN(v))throw new Error('ValueError: could not convert string to float');return v},
+    str:ps,bool:x=>!!x&&!(Array.isArray(x)&&!x.length),list:x=>[...x],tuple:x=>{const a=[...x];a.t=1;return a},abs:M.abs,sum:l=>l.reduce((s,x)=>s+x,0),pow:M.pow,
+    min:(...a)=>M.min(...(a.length==1?a[0]:a)),max:(...a)=>M.max(...(a.length==1?a[0]:a)),any:l=>l.some(Boolean),all:l=>l.every(Boolean),chr:String.fromCharCode,ord:s=>s.charCodeAt(0),divmod:(a,b)=>{if(b===0)throw new Error('ZeroDivisionError: division by zero');const q=M.floor(a/b);return BI.__t([q,a-q*b])},
+    round:(x,n=0)=>{const v=x*10**n;let r=M.round(v);if(M.abs(v-M.trunc(v))===.5&&r%2!==0)r--;return n?r/10**n:r},
+    sorted:l=>[...l].sort(),reversed:l=>[...l].reverse(),enumerate:l=>[...l].map((x,i)=>BI.__t([i,x])),zip:(a,b)=>[...a].map((x,i)=>BI.__t([x,b[i]])).slice(0,M.min(a.length,b.length)),input:p=>prompt(p)||''};
+  Object.assign(BI,MODS);
+  const env=new Proxy(store,{has:()=>true,get:(t,k)=>{if(typeof k==='symbol')return undefined;if(k in t)return t[k];if(k in BI)return BI[k];throw new Error("NameError: name '"+k+"' is not defined")}});
+  S.pcv=/kandinsky/.test(S.y.t);S.pshow='cv';S.pout=out;S.pym='out';S.prun=true;render();
+  let fn;try{fn=new AsyncFn('__e','with(__e){'+py2js(S.y.t)+'\n}')}catch(e){out.push('Erreur de syntaxe : '+e.message)}
+  if(fn)try{await fn(env)}catch(e){
+    let msg=e.message||String(e);if(e instanceof RangeError)msg='RecursionError: maximum recursion depth exceeded';
+    const ln=e instanceof RangeError?0:(String(e.stack).match(/<anonymous>:(\d+):\d+/)||[])[1];
+    if(msg!=='KeyboardInterrupt')out.push('Erreur'+(ln?' (ligne '+(ln-2)+')':'')+' : '+msg)}
+  if(cur)out.push(cur);
+  if(!out.length&&!S.pcv)out.push('(aucune sortie)');
+  S.prun=false;if(S.app==='py'&&S.pym==='out')render();
 }
 /* ===== Inférence & Finance ===== */
 const erf=x=>{const a=Math.abs(x);let r;if(a<3){let t=a,s=a;for(let n=1;n<80;n++){t*=-a*a/n;s+=t/(2*n+1)}r=2/Math.sqrt(Math.PI)*s}else{const q=a*a;r=1-Math.exp(-q)/(a*Math.sqrt(Math.PI))*(1-1/(2*q)+3/(4*q*q)-15/(8*q**3)+105/(16*q**4))}return x<0?-r:r};
@@ -319,7 +418,7 @@ function draw(){
 function saveF(){try{localStorage.setItem('nw_files',JSON.stringify(S.files))}catch(e){}}
 const SH={'sin(':'asin(','cos(':'acos(','tan(':'atan(','−':'='};
 function press(a,ex){
-  if(a==='HOME'){S.app='home';S.plot=false;S.shift=false;S.alpha=false;S.tb=null;return render()}
+  if(a==='HOME'){S.pstop=true;S.app='home';S.plot=false;S.shift=false;S.alpha=false;S.tb=null;return render()}
   if(S.tb){
     if(a==='BACK'){S.tb=null;return render()}
     if(a==='UP')S.tb.i=Math.max(0,S.tb.i-1);
@@ -328,7 +427,7 @@ function press(a,ex){
     else return;
     return render();
   }
-  if(a==='BACK'){if(S.app==='py'&&S.pym==='out'){S.pym='edit';return render()}if((S.app==='inf'||S.app==='fin')&&S.nm>=0){S.nm=-1;S.nr=null;return render()}if(S.plot)S.plot=false;else if(S.app==='files')S.app='set';else S.app='home';return render()}
+  if(a==='BACK'){if(S.app==='py'&&S.pym==='out'){S.pstop=true;S.pym='edit';return render()}if((S.app==='inf'||S.app==='fin')&&S.nm>=0){S.nm=-1;S.nr=null;return render()}if(S.plot)S.plot=false;else if(S.app==='files')S.app='set';else S.app='home';return render()}
   if(S.app==='home'){
     const n=APPS.length;
     if(a==='LEFT')S.sel=(S.sel+n-1)%n;else if(a==='RIGHT')S.sel=(S.sel+1)%n;
@@ -345,7 +444,14 @@ function press(a,ex){
   if(S.app==='set'){if(a==='UP')S.ssel=0;else if(a==='DOWN')S.ssel=1;else if(a==='OK'||a==='EXE'){if(S.ssel===0)S.deg=!S.deg;else{S.app='files';S.fsel=0}}return render()}
   if(S.app==='elem')return elemKey(a);
   if((S.app==='inf'||S.app==='fin')&&S.nm<0){const m=MENUS[S.app];if(a==='UP')S.msel=Math.max(0,S.msel-1);else if(a==='DOWN')S.msel=Math.min(m.length-1,S.msel+1);else if(a==='OK'||a==='EXE'){S.nm=S.msel;S.nr=null;S.n={t:'',i:0}}return render()}
-  if(S.app==='py'&&S.pym==='out'){if(a==='OK'||a==='EXE')pyRun();return render()}
+  if(S.app==='py'&&S.pym==='out'){if((a==='OK'||a==='EXE')&&!S.prun){if(S.pcv)S.pshow=S.pshow==='cv'?'txt':'cv';else pyRun()}return render()}
+  if(EXTERNAL_APPS[S.app]){
+    if(a==='OK'||a==='EXE'){
+      const x=EXTERNAL_APPS[S.app];
+      window.open(x.url,'_blank','noopener,noreferrer');
+    }
+    return;
+  }
   if(!IMPL.includes(S.app))return;
   if(S.app==='graph'&&S.plot){
     if(a==='UP')S.zoom=Math.max(1,S.zoom/1.5);else if(a==='DOWN')S.zoom=Math.min(1000,S.zoom*1.5);
