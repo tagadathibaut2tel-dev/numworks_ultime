@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NumWorks V14</title>
+<title>NumWorks V15</title>
 <style>
 :root{--yellow:#ffb531;--dark:#414141}
 *{box-sizing:border-box}
@@ -243,15 +243,36 @@ document.addEventListener('paste',e=>{
   b.t=b.t.slice(0,b.i)+x+b.t.slice(b.i);b.i+=x.length;if(A==='py')pySave();render();
 });
 /* --- recherche web via Groq (modèles "compound" : la recherche est faite côté serveur) --- */
+// Recherche web : outil "browser_search" des modèles gpt-oss (les modèles groq/compound ne sont pas ouverts à tous les comptes)
+const WEB_SYS_END=' Termine par une ligne "Sources :" puis une source par ligne au format "- Titre | URL complète" (5 maximum).';
+function parseWeb(answer,tools){
+  const results=[];
+  const add=(title,url,content)=>{url=(url||'').replace(/[).,;]+$/,'');if(!/^https?:\/\//.test(url)||results.some(x=>x.url===url))return;results.push({title:(title||url).replace(/[*_`#]/g,'').replace(/^[\s\-•\d.]+/,'').trim()||url,url,content:content||''})};
+  (tools||[]).forEach(t=>((t.search_results&&t.search_results.results)||[]).forEach(r=>add(r.title,r.url,r.content)));
+  let summary=answer,src='';
+  const m=answer.match(/\n[#*\s]*sources?\s*:?[#*\s]*\n/i);
+  if(m){summary=answer.slice(0,m.index);src=answer.slice(m.index+m[0].length)}
+  (src||answer).split('\n').forEach(l=>{
+    let any=false;
+    for(const k of l.matchAll(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g)){add(k[1],k[2]);any=true}
+    if(any)return;
+    const u=l.match(/https?:\/\/[^\s)\]>|]+/);
+    if(u)add(l.replace(u[0],'').replace(/[|—–:()\[\]\s-]+$/,'').replace(/^[\s|—–:*•\d.-]+/,''),u[0]);
+  });
+  summary=summary.replace(/\[([^\]]+)\]\(https?:[^)\s]+\)/g,'$1').replace(/[*#`]/g,'').trim();
+  return{summary,results};
+}
 async function groqWeb(prompt,sys){
   if(!getGroqKey())throw new Error('Clé Groq manquante (Paramètres > Config API).');
   let err='';
-  for(const model of ['groq/compound-mini','groq/compound']){
-    const{res,data}=await groqTry(model,[{role:'system',content:sys},{role:'user',content:prompt}]);
+  for(const model of ['openai/gpt-oss-120b','openai/gpt-oss-20b','groq/compound-mini','groq/compound']){
+    const compound=model.startsWith('groq/');
+    const{res,data}=await groqTry(model,[{role:'system',content:sys+WEB_SYS_END},{role:'user',content:prompt}],compound?{}:{tools:[{type:'browser_search'}],tool_choice:'required',max_tokens:3000});
     if(res.ok){
-      const m=(data.choices&&data.choices[0]&&data.choices[0].message)||{},results=[];
-      (m.executed_tools||[]).forEach(t=>((t.search_results&&t.search_results.results)||[]).forEach(r=>{if(r&&r.url&&!results.some(x=>x.url===r.url))results.push(r)}));
-      return{answer:(m.content||'').trim(),results};
+      const m=(data.choices&&data.choices[0]&&data.choices[0].message)||{};
+      const p=parseWeb((m.content||'').trim(),m.executed_tools);
+      if(p.summary||p.results.length)return{answer:p.summary,results:p.results};
+      err='réponse vide';continue;
     }
     err=(data.error&&data.error.message)||('Erreur '+res.status);
     if(res.status===401)throw new Error('Clé Groq refusée (401).');
@@ -326,7 +347,15 @@ async function searchGoogle(query){
       G.summary=answer;G.src='Groq';
       G.results=results.slice(0,10).map(r=>({title:r.title||r.url,link:r.url,snippet:(r.content||'').replace(/\s+/g,' ').slice(0,160)}));
       if(!G.results.length&&!answer)throw new Error('Aucun résultat');ok=true;
-    }catch(e){G.error=e1+netErr(e)}
+    }catch(e){
+      G.error=e1+netErr(e);
+      try{
+        const d=await wikiApi({action:'query',list:'search',srsearch:query,srlimit:10});
+        G.results=((d.query&&d.query.search)||[]).map(x=>({title:x.title,link:'https://fr.wikipedia.org/wiki/'+encodeURIComponent(x.title.replace(/ /g,'_')),snippet:wkDecode(x.snippet)}));
+        G.summary='';G.src='Wikipédia (secours)';
+        if(G.results.length){ok=true;G.error=G.error+'\nRésultats Wikipédia à la place.'}
+      }catch(e2){}
+    }
   }
   if(ok){G.sel=0;G.lastq=query}
   G.loading=false;render();
@@ -353,9 +382,10 @@ async function groqModelList(){
   try{const r=await fetch('https://api.groq.com/openai/v1/models',{headers:{'Authorization':'Bearer '+getGroqKey()}});const d=await r.json();
     return(d.data||[]).map(m=>m.id).filter(id=>!/whisper|tts|guard|orpheus|embed|safeguard|allam|compound/i.test(id))}catch(e){return[]}
 }
-async function groqTry(model,msgs){
+async function groqTry(model,msgs,extra){
   const body={model,messages:msgs,max_tokens:1500,temperature:0.5};
   if(/^openai\/gpt-oss/.test(model))body.reasoning_effort='low';
+  Object.assign(body,extra||{});
   const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getGroqKey()},body:JSON.stringify(body)});
   const data=await res.json().catch(()=>({}));
   return{res,data};
