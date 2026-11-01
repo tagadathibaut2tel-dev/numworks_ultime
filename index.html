@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NumWorks V8</title>
+<title>NumWorks V12</title>
 <style>
 :root{--yellow:#ffb531;--dark:#414141}
 *{box-sizing:border-box}
@@ -52,6 +52,7 @@ body{display:flex;justify-content:center;align-items:center;padding:10px;
 .cu{display:inline-block;width:1px;height:12px;background:#000;vertical-align:-2px;animation:b 1s step-end infinite}
 @keyframes b{50%{opacity:0}}
 .tbm{position:absolute;left:0;right:0;top:0;bottom:0;background:#fff;display:flex;flex-direction:column;z-index:5}
+.tr{display:flex;justify-content:space-between;align-items:center;padding:2px 8px;font-size:10px;min-height:22px;color:#333}.tr small{display:block;font-size:8px;color:#8a8a8a;line-height:9px}.tr.sel{background:var(--yellow);color:#000}.tr.sel small{color:#6b4a00}
 .f{padding:3px 8px}.f.sel{background:var(--yellow);color:#000}
 canvas{width:100%;flex:1;min-height:0}
 
@@ -100,6 +101,42 @@ canvas{width:100%;flex:1;min-height:0}
 .webframe{width:100%;flex:1;min-height:0;border:1px solid #d4d4d4;border-radius:3px;background:#fff}
 .webtools{display:flex;align-items:center;justify-content:space-between;gap:5px;font:8px Helvetica,Arial,sans-serif;color:#777}
 .webtools a{color:#555;text-decoration:none;border:1px solid #ddd;border-radius:9px;padding:3px 7px;background:#fafafa}
+
+/* Styles pour les applications web améliorées */
+.search-container{display:flex;flex-direction:column;flex:1;min-height:0;padding:8px;gap:6px}
+.search-bar{display:flex;gap:4px;align-items:center}
+.search-input{flex:1;padding:4px 8px;border:1px solid #ccc;border-radius:12px;font-size:10px;outline:none}
+.search-input:focus{border-color:var(--yellow)}
+.search-btn{padding:4px 10px;background:var(--yellow);color:#fff;border:none;border-radius:12px;font-size:9px;font-weight:700;cursor:pointer}
+.search-btn:hover{background:#ffa500}
+.results-container{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.result-item{padding:6px;border:1px solid #e0e0e0;border-radius:6px;cursor:pointer;background:#fafafa}
+.result-item:hover{background:#f0f0f0;border-color:var(--yellow)}
+.result-item.selected{background:var(--yellow);color:#fff}
+.result-title{font-size:9px;font-weight:700;margin-bottom:2px}
+.result-desc{font-size:8px;color:#666;line-height:1.3}
+.result-item.selected .result-desc{color:#fff}
+.video-thumbnail{width:100%;height:80px;object-fit:cover;border-radius:4px;margin-bottom:4px}
+.loading{text-align:center;padding:20px;font-size:9px;color:#999}
+.error{text-align:center;padding:20px;font-size:9px;color:#d32f2f}
+.config-link{font-size:8px;color:#666;text-decoration:underline;cursor:pointer;text-align:center;padding:4px}
+.config-link:hover{color:var(--yellow)}
+
+/* Styles spécifiques pour Gemini */
+.gemini-container{display:flex;flex-direction:column;flex:1;min-height:0;padding:8px;gap:6px}
+.gemini-header{display:flex;align-items:center;gap:6px;padding:6px;background:linear-gradient(135deg,#f55036,#ff8a4c);border-radius:8px;color:#fff}
+.gemini-logo{width:24px;height:24px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#f55036}
+.gemini-title{font-size:11px;font-weight:700}
+.gemini-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding:4px}
+.gemini-msg{padding:6px 8px;border-radius:8px;font-size:9px;line-height:1.4;max-width:85%}
+.gemini-msg.user{background:#e3f2fd;align-self:flex-end}
+.gemini-msg.assistant{background:#f5f5f5;align-self:flex-start}
+.gemini-input-area{display:flex;gap:4px}
+.gemini-input{flex:1;padding:6px 10px;border:1px solid #ccc;border-radius:16px;font-size:10px;outline:none}
+.gemini-input:focus{border-color:#f55036}
+.gemini-send{padding:6px 12px;background:#f55036;color:#fff;border:none;border-radius:16px;font-size:9px;font-weight:700;cursor:pointer}
+.gemini-send:hover{background:#d9401f}
+.gemini-send:disabled{background:#ccc;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -127,33 +164,218 @@ const APPS=[
 ['set','Paramètres',ic(0,'<circle cx="22" cy="22" r="9" fill="none" stroke="#777" stroke-width="5" stroke-dasharray="4 3"/><circle cx="22" cy="22" r="3" fill="#ffb531"/>')],
 ['youtube','YouTube',ic(0,'<rect x="4" y="10" width="36" height="24" rx="7" fill="#e62117"/><path d="M19 16l11 6-11 6z" fill="#fff"/>')],
 ['google','Google',ic(0,'<text x="22" y="32" font-size="31" font-family="Arial" font-weight="700" text-anchor="middle" fill="#4285f4">G</text>')],
-['chatgpt','ChatGPT',ic(1,'<path d="M22 7a8 8 0 0 0-7 4 8 8 0 0 0-4 13 8 8 0 0 0 8 10 8 8 0 0 0 14-5 8 8 0 0 0 1-14A8 8 0 0 0 22 7z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/><path d="M22 12v20M13 17l18 10M13 27l18-10" stroke="#fff" stroke-width="2" stroke-linecap="round"/>')]];
-const EXTERNAL_APPS={
-  youtube:{name:'YouTube',url:'https://www.youtube.com/',symbol:'▶',note:'Regarder des vidéos sur YouTube.'},
-  google:{name:'Google',url:'https://www.google.com/',symbol:'G',note:'Effectuer une recherche sur le Web avec Google.'},
-  chatgpt:{name:'ChatGPT',url:'https://chatgpt.com/',symbol:'✳',note:'Ouvrir ChatGPT dans ton navigateur.'}
+['gemini','Groq IA',ic(1,'<rect x="6" y="6" width="32" height="32" rx="9" fill="#f55036"/><text x="22" y="30" font-size="22" font-weight="700" font-family="Arial" text-anchor="middle" fill="#fff">G</text>')]];
+
+// État pour les applications web
+Object.assign(S,{
+  youtube:{query:'',results:[],selected:-1,loading:false,error:null,videoId:null},
+  google:{query:'',results:[],selected:-1,loading:false,error:null},
+  gemini:{messages:[],input:'',loading:false,error:null}
+});
+
+// Configuration des API (stockée en localStorage)
+const API_CONFIG={
+  youtube_mode:localStorage.getItem('nw_youtube_mode')||'invidious', // 'invidious' ou 'api'
+  youtube_key:localStorage.getItem('nw_youtube_key')||'',
+  invidious_instance:localStorage.getItem('nw_invidious_instance')||'https://vid.puffyan.us',
+  google_mode:localStorage.getItem('nw_google_mode')||'duckduckgo', // 'duckduckgo' ou 'api'
+  google_key:localStorage.getItem('nw_google_key')||'',
+  google_cse:localStorage.getItem('nw_google_cse')||'',
+  gemini_endpoint:localStorage.getItem('nw_gemini_endpoint')||'' // URL du backend proxy
 };
-const IMPL=['calc','graph','files','stats','proba','eq','seq','reg','set','py','inf','fin','elem'];
+
+function saveApiConfig(){
+  localStorage.setItem('nw_youtube_mode',API_CONFIG.youtube_mode);
+  localStorage.setItem('nw_youtube_key',API_CONFIG.youtube_key);
+  localStorage.setItem('nw_invidious_instance',API_CONFIG.invidious_instance);
+  localStorage.setItem('nw_google_mode',API_CONFIG.google_mode);
+  localStorage.setItem('nw_google_key',API_CONFIG.google_key);
+  localStorage.setItem('nw_google_cse',API_CONFIG.google_cse);
+}
+
+const IMPL=['calc','graph','files','stats','proba','eq','seq','reg','set','py','inf','fin','elem','youtube','google','gemini'];
 Object.assign(S,{q:{t:'x^2',i:3},r:{t:'',i:0},pts:[],deg:false,ssel:0,vars:{},alpha:false,clip:'',tb:null,n:{t:'',i:0},y:{t:'',i:0},nm:-1,msel:0,nr:null,pym:'edit',pout:[],el:0});
-const BUF={inf:'n',fin:'n',py:'y',calc:'c',graph:'g',eq:'e',stats:'s',proba:'p',seq:'q',reg:'r'};
+const BUF={inf:'n',fin:'n',py:'y',calc:'c',graph:'g',eq:'e',stats:'s',proba:'p',seq:'q',reg:'r',youtube:'youtube',google:'google',gemini:'gemini'};
 const D=x=>S.deg?x*Math.PI/180:x,U=x=>S.deg?x*180/Math.PI:x;
 const T={sin:x=>Math.sin(D(x)),cos:x=>Math.cos(D(x)),tan:x=>Math.tan(D(x)),asin:x=>U(Math.asin(x)),acos:x=>U(Math.acos(x)),atan:x=>U(Math.atan(x))};
 const FN={asin:'T.asin',acos:'T.acos',atan:'T.atan',sin:'T.sin',cos:'T.cos',tan:'T.tan',ln:'Math.log',log:'Math.log10',exp:'Math.exp','√':'Math.sqrt'};
-Object.assign(FN,{abs:'Math.abs',floor:'Math.floor',ceil:'Math.ceil',round:'Math.round'});
+Object.assign(FN,{abs:'Math.abs',floor:'Math.floor',ceil:'Math.ceil',round:'T.round',sign:'Math.sign',frac:'T.frac',root:'T.root',gcd:'T.gcd',lcm:'T.lcm',quo:'T.quo',rem:'T.rem',binomial:'T.binomial',permute:'T.permute',random:'T.random',randint:'T.randint',sinh:'Math.sinh',cosh:'Math.cosh',tanh:'Math.tanh',asinh:'Math.asinh',acosh:'Math.acosh',atanh:'Math.atanh'});
+const FNRE=()=>new RegExp(Object.keys(FN).sort((a,b)=>b.length-a.length).join('|'),'g');
 T.fact=x=>{if(!(x>=0)||x%1||x>170)return NaN;let r=1;for(let k=2;k<=x;k++)r*=k;return r};
+Object.assign(T,{frac:x=>x-Math.floor(x),root:(x,n)=>x<0&&n%2===1?-Math.pow(-x,1/n):Math.pow(x,1/n),gcd:(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b)[a,b]=[b,a%b];return a},lcm:(a,b)=>a&&b?Math.abs(a*b)/T.gcd(a,b):0,quo:(a,b)=>Math.floor(a/b),rem:(a,b)=>a-b*Math.floor(a/b),
+  binomial:(n,k)=>{if(!(k>=0&&k<=n)||n%1||k%1)return NaN;let r=1;for(let i=1;i<=k;i++)r=r*(n-k+i)/i;return Math.round(r)},permute:(n,k)=>{if(!(k>=0&&k<=n)||n%1||k%1)return NaN;let r=1;for(let i=0;i<k;i++)r*=n-i;return r},
+  random:()=>Math.random(),randint:(a,b)=>a+Math.floor(Math.random()*(b-a+1)),round:(x,n=0)=>Math.round(x*10**n)/10**n});
 function ev(s,x){
   let t=s.replace(/Ans/g,'('+S.ans+')').replace(/e\^\(/g,'exp(').replace(/[A-Z]/g,m=>'('+(S.vars[m]||0)+')').replace(/[\[{]/g,'(').replace(/[\]}]/g,')');
-  t=t.replace(/([\d.)πx])(?=\s*(?:[(π√x]|asin|acos|atan|sin|cos|tan|ln|log|exp|abs|floor|ceil|round))/g,'$1*');
+  t=t.replace(/([\d.)πx])(?=\s*(?:[(π√x]|[a-z]{2,}\())/g,'$1*');
   t=t.replace(/(\d+(?:\.\d+)?)!/g,'T.fact($1)').replace(/%/g,'/100');
-  t=t.replace(/asin|acos|atan|sin|cos|tan|ln|log|exp|abs|floor|ceil|round|√/g,m=>FN[m]).replace(/π/g,'Math.PI').replace(/ᴇ/g,'e').replace(/\^/g,'**').replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/=/g,'==');
-  const v=t.replace(/(?:Math|T)\.(PI|asin|acos|atan|sin|cos|tan|log10|log|exp|sqrt|abs|floor|ceil|round|fact)/g,'').replace(/x/g,'');
-  if(!/^[\d+\-*\/().e\s<>=]*$/.test(v))return NaN;
+  t=t.replace(FNRE(),m=>FN[m]).replace(/π/g,'Math.PI').replace(/ᴇ/g,'e').replace(/\^/g,'**').replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/=/g,'==');
+  const v=t.replace(/(?:Math|T)\.\w+/g,'').replace(/x/g,'');
+  if(!/^[\d+\-*\/().e\s<>=,]*$/.test(v)||(v.includes(',')&&!/(?:Math|T)\./.test(t)))return NaN;
   try{const r=Function('x','T','"use strict";return('+t+')')(x,T);return typeof r==='number'?r:typeof r==='boolean'?+r:NaN}catch(e){return NaN}
 }
 const fmt=r=>Number.isFinite(r)?String(parseFloat(r.toPrecision(10))).replace(/e\+?/,'ᴇ'):'Erreur';
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const buf=()=>S[BUF[S.app]];
 const line=b=>esc(b.t.slice(0,b.i))+'<span class="cu"></span>'+esc(b.t.slice(b.i));
+
+// Fonctions pour YouTube
+async function searchYouTube(query){
+  S.youtube.loading=true;
+  S.youtube.error=null;
+  render();
+  try{
+    if(API_CONFIG.youtube_mode==='invidious'){
+      // Utiliser Invidious (gratuit, sans clé API) avec fallback
+      const instances=[
+        API_CONFIG.invidious_instance,
+        'https://vid.puffyan.us',
+        'https://invidious.snopyta.org',
+        'https://yewtu.be',
+        'https://inv.tux.pizza'
+      ].filter(Boolean);
+      let success=false;
+      for(const instance of instances){
+        try{
+          const url=`${instance}/api/v1/search?q=${encodeURIComponent(query)}&type=video`;
+          const res=await fetch(url,{signal:AbortSignal.timeout(5000)});
+          if(res.ok){
+            const data=await res.json();
+            if(data&&data.length>0){
+              S.youtube.results=data.slice(0,10).map(item=>({
+                videoId:item.videoId,
+                title:item.title,
+                thumbnail:item.videoThumbnails?.[4]?.url||item.videoThumbnails?.[0]?.url||'',
+                channel:item.author
+              }));
+              S.youtube.selected=0;
+              success=true;
+              break;
+            }
+          }
+        }catch(e){
+          continue;
+        }
+      }
+      if(!success){
+        throw new Error('Aucune instance Invidious disponible. Vérifiez votre connexion ou configurez une clé API YouTube.');
+      }
+    }else{
+      // Utiliser l'API YouTube officielle
+      if(!API_CONFIG.youtube_key){
+        throw new Error('Clé API YouTube non configurée');
+      }
+      const url=`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&key=${API_CONFIG.youtube_key}`;
+      const res=await fetch(url);
+      if(!res.ok)throw new Error('Erreur API YouTube: '+res.status);
+      const data=await res.json();
+      S.youtube.results=data.items.map(item=>({
+        videoId:item.id.videoId,
+        title:item.snippet.title,
+        thumbnail:item.snippet.thumbnails.medium.url,
+        channel:item.snippet.channelTitle
+      }));
+    }
+    S.youtube.selected=0;
+  }catch(e){
+    S.youtube.error=e.message;
+  }
+  S.youtube.loading=false;
+  render();
+}
+
+// Fonctions pour Google
+async function searchGoogle(query){
+  S.google.loading=true;
+  S.google.error=null;
+  render();
+  try{
+    if(API_CONFIG.google_mode==='duckduckgo'){
+      // Utiliser SearXNG (gratuit, sans clé API)
+      const instances=[
+        'https://searx.be',
+        'https://search.ononoki.org',
+        'https://searxng.site'
+      ];
+      let success=false;
+      for(const instance of instances){
+        try{
+          const url=`${instance}/search?q=${encodeURIComponent(query)}&format=json`;
+          const res=await fetch(url);
+          if(res.ok){
+            const data=await res.json();
+            S.google.results=(data.results||[]).slice(0,10).map(item=>({
+              title:item.title,
+              link:item.url,
+              snippet:item.content||''
+            }));
+            S.google.selected=0;
+            success=true;
+            break;
+          }
+        }catch(e){
+          continue;
+        }
+      }
+      if(!success){
+        throw new Error('Aucune instance SearXNG disponible. Essayez plus tard.');
+      }
+    }else{
+      // Utiliser l'API Google officielle
+      if(!API_CONFIG.google_key||!API_CONFIG.google_cse){
+        throw new Error('API Google non configurée');
+      }
+      const url=`https://www.googleapis.com/customsearch/v1?key=${API_CONFIG.google_key}&cx=${API_CONFIG.google_cse}&q=${encodeURIComponent(query)}&num=10`;
+      const res=await fetch(url);
+      if(!res.ok)throw new Error('Erreur API Google: '+res.status);
+      const data=await res.json();
+      S.google.results=(data.items||[]).map(item=>({
+        title:item.title,
+        link:item.link,
+        snippet:item.snippet||''
+      }));
+      S.google.selected=0;
+    }
+  }catch(e){
+    S.google.error=e.message;
+  }
+  S.google.loading=false;
+  render();
+}
+
+// Assistant IA : Groq uniquement
+const GROQ_MODELS=['llama-3.3-70b-versatile','llama-3.1-8b-instant'];
+const GROQ_SYS='Tu es un assistant intégré dans une calculatrice NumWorks. Réponds en français, de façon courte et claire (écran minuscule), sans mise en forme markdown.';
+function getGroqKey(){try{return(localStorage.getItem('nw_groq_key')||'').trim()}catch(e){return''}}
+async function sendGeminiMessage(message){
+  message=(message||'').trim();
+  if(!message||S.gemini.loading)return;
+  if(!getGroqKey()){S.gemini.error='Clé Groq manquante.\nParamètres > Config API > collez votre clé (gsk_...). Gratuite sur console.groq.com';render();return}
+  S.gemini.messages.push({role:'user',content:message});
+  S.gemini.loading=true;S.gemini.error=null;S.gemini.input='';
+  render();
+  const msgs=[{role:'system',content:GROQ_SYS}].concat(S.gemini.messages.slice(-12).map(m=>({role:m.role,content:m.content})));
+  try{
+    let data,res,err;
+    for(const model of GROQ_MODELS){
+      res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getGroqKey()},body:JSON.stringify({model,messages:msgs,max_tokens:600,temperature:0.5})});
+      data=await res.json().catch(()=>({}));
+      if(res.ok)break;
+      err=data.error&&data.error.message||('Erreur '+res.status);
+      if(res.status!==400&&res.status!==404)break; // on ne change de modèle que si le modèle est refusé
+    }
+    if(!res.ok){
+      if(res.status===401)throw new Error('Clé Groq refusée (401). Vérifiez-la dans Config API.');
+      if(res.status===429)throw new Error('Limite Groq atteinte (429). Attendez un peu puis réessayez.');
+      throw new Error(err);
+    }
+    S.gemini.messages.push({role:'assistant',content:data.choices?.[0]?.message?.content||'Pas de réponse'});
+  }catch(e){
+    S.gemini.error=(e instanceof TypeError)?'Connexion impossible (réseau ou navigateur). Vérifiez votre connexion.':e.message;
+  }
+  S.gemini.loading=false;render();
+}
+
 function solve(s){
   const p=s.split('='),f=x=>ev(p[0],x)-(p[1]?ev(p[1],x):0);
   const c=f(0),f1=f(1),fm=f(-1),f2=f(2);
@@ -184,6 +406,7 @@ function binom(t){
 }
 function reg(P){const n=P.length;if(n<2)return[];const mx=P.reduce((s,p)=>s+p[0],0)/n,my=P.reduce((s,p)=>s+p[1],0)/n;let sxy=0,sxx=0,syy=0;P.forEach(p=>{sxy+=(p[0]-mx)*(p[1]-my);sxx+=(p[0]-mx)**2;syy+=(p[1]-my)**2});
   if(!sxx)return[['Erreur','x constants']];const a=sxy/sxx;return[['y=ax+b',''],['a',fmt(a)],['b',fmt(my-a*mx)],['r',fmt(syy?sxy/Math.sqrt(sxx*syy):1)]]}
+
 function render(){
   const el=document.getElementById('scr');let h='';
   const bar=t=>`<div class="bar"><span>${S.deg?'deg':'rad'}${S.shift?' ⇧':''}${S.alpha?' α'+(S.alpha==='lock'?'*':''):''}</span><span>${t}</span><span class="bt"></span></div>`;
@@ -207,20 +430,201 @@ function render(){
   }else if(S.app==='reg'){
     h=bar('Régressions')+'<div class="body" style="justify-content:flex-start"><div style="font-size:10px;word-break:break-all">'+(S.pts.length?S.pts.map(p=>'('+fmt(p[0])+';'+fmt(p[1])+')').join(' '):'Saisir x,y puis EXE')+'</div>'+reg(S.pts).map(r=>L(r[0],r[1])).join('')+`<div class="in" style="margin-top:auto">${line(S.r)}</div></div>`;
   }else if(S.app==='set'){
-    h=bar('Paramètres')+`<div class="f${S.ssel===0?' sel':''}">Unité d'angle : ${S.deg?'Degré':'Radian'}</div><div class="f${S.ssel===1?' sel':''}">Fichiers ›</div><div class="f" style="font-size:9px;color:#888">▲▼ : choisir · OK : valider</div>`;
+    h=bar('Paramètres')+`<div class="f${S.ssel===0?' sel':''}">Unité d'angle : ${S.deg?'Degré':'Radian'}</div><div class="f${S.ssel===1?' sel':''}">Fichiers ›</div><div class="f${S.ssel===2?' sel':''}">Config API ›</div><div class="f" style="font-size:9px;color:#888">▲▼ : choisir · OK : valider</div>`;
   }else if(S.app==='files'){
     h=bar('Fichiers')+'<div style="flex:1;overflow:auto">'+(S.files.length?S.files.map((f,i)=>`<div class="f${i===S.fsel?' sel':''}">▤ ${esc(f)}</div>`).join(''):'<div class="f">Aucun fichier · EXE : nouveau</div>')+'</div>';
+  }else if(S.app==='youtube'){
+    h=youtubeView(bar);
+  }else if(S.app==='google'){
+    h=googleView(bar);
+  }else if(S.app==='gemini'){
+    h=geminiView(bar);
   }else if(S.app==='py')h=pyView(bar);else if(S.app==='inf'||S.app==='fin')h=menuView(bar);else if(S.app==='elem')h=elemView(bar);
-  else if(EXTERNAL_APPS[S.app]){
-    const x=EXTERNAL_APPS[S.app];
-    h=bar(x.name)+'<div class="webapp"><iframe class="webframe" title="'+x.name+'" src="'+x.url+'" loading="lazy" referrerpolicy="no-referrer" allow="clipboard-read; clipboard-write"></iframe><div class="webtools"><span>Si le site bloque l’iframe :</span><a href="'+x.url+'" target="_blank" rel="noopener noreferrer">Ouvrir dans un onglet ↗</a></div></div>';
-  }else h=bar(S.app)+'<div class="body" style="justify-content:center;align-items:center;text-align:center;font-family:Helvetica,Arial,sans-serif;font-size:11px">Application non disponible<br><span style="font-size:9px;color:#888">pas encore implémentée</span></div>';
-  if(S.tb&&BUF[S.app]){const it=S.tb.items,st=Math.max(0,Math.min(S.tb.i-5,it.length-9));
-    h+=`<div class="tbm"><div class="bar"><span></span><span>${S.tb.title}</span><span></span></div>`+it.slice(st,st+9).map((x,j)=>`<div class="f${st+j===S.tb.i?' sel':''}">${esc(x[0])}</div>`).join('')+'</div>'}
+  else if(S.app==='api_config')h=apiConfigView(bar);
+  else h=bar(S.app)+'<div class="body" style="justify-content:center;align-items:center;text-align:center;font-family:Helvetica,Arial,sans-serif;font-size:11px">Application non disponible<br><span style="font-size:9px;color:#888">pas encore implémentée</span></div>';
+  if(S.tb&&BUF[S.app])h+=tbView();
   el.innerHTML=h;
   el.querySelectorAll('.app').forEach(a=>a.onclick=()=>{S.sel=+a.dataset.i;press('OK')});
+  // Event listeners pour les applications web
+  if(S.app==='youtube')setupYoutubeListeners();
+  if(S.app==='google')setupGoogleListeners();
+  if(S.app==='gemini')setupGeminiListeners();
   pyBlit();homeScroll();
 }
+
+// Vue YouTube
+function youtubeView(bar){
+  const yt=S.youtube;
+  let content='';
+  if(yt.videoId){
+    // Lecteur vidéo
+    content=`<div class="webapp">
+      <div style="display:flex;gap:4px;margin-bottom:4px">
+        <button class="search-btn" onclick="S.youtube.videoId=null;render()">← Retour</button>
+      </div>
+      <iframe class="webframe" src="https://www.youtube-nocookie.com/embed/${yt.videoId}?autoplay=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>`;
+  }else{
+    // Recherche et résultats
+    content=`<div class="search-container">
+      <div class="search-bar">
+        <input type="text" class="search-input" id="yt-search" placeholder="Rechercher une vidéo..." value="${esc(yt.query)}">
+        <button class="search-btn" onclick="searchYouTube(document.getElementById('yt-search').value)">OK</button>
+      </div>
+      ${yt.loading?'<div class="loading">Recherche en cours...</div>':''}
+      ${yt.error?'<div class="error">'+esc(yt.error)+'</div>':''}
+      <div class="results-container">
+        ${yt.results.map((r,i)=>`
+          <div class="result-item${i===yt.selected?' selected':''}" data-idx="${i}">
+            <img class="video-thumbnail" src="${r.thumbnail}" alt="">
+            <div class="result-title">${esc(r.title)}</div>
+            <div class="result-desc">${esc(r.channel)}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="config-link" onclick="S.app='api_config';render()">⚙ Configurer l'API YouTube</div>
+    </div>`;
+  }
+  return bar('YouTube')+content;
+}
+
+// Vue Google
+function googleView(bar){
+  const g=S.google;
+  const content=`<div class="search-container">
+    <div class="search-bar">
+      <input type="text" class="search-input" id="google-search" placeholder="Rechercher sur Google..." value="${esc(g.query)}">
+      <button class="search-btn" onclick="searchGoogle(document.getElementById('google-search').value)">OK</button>
+    </div>
+    ${g.loading?'<div class="loading">Recherche en cours...</div>':''}
+    ${g.error?'<div class="error">'+esc(g.error)+'</div>':''}
+    <div class="results-container">
+      ${g.results.map((r,i)=>`
+        <div class="result-item${i===g.selected?' selected':''}" data-idx="${i}" data-link="${esc(r.link)}">
+          <div class="result-title">${esc(r.title)}</div>
+          <div class="result-desc">${esc(r.snippet)}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="config-link" onclick="S.app='api_config';render()">⚙ Configurer l'API Google</div>
+  </div>`;
+  return bar('Google')+content;
+}
+
+// Vue Gemini
+function geminiView(bar){
+  const g=S.gemini;
+  const content=`<div class="gemini-container">
+    <div class="gemini-header">
+      <div class="gemini-logo">✦</div>
+      <div class="gemini-title">Groq IA · Llama 3.3</div>
+    </div>
+    <div class="gemini-messages" id="gemini-messages">
+      ${g.messages.map(m=>`<div class="gemini-msg ${m.role}">${esc(m.content)}</div>`).join('')}
+      ${g.loading?'<div class="gemini-msg assistant">Réflexion en cours...</div>':''}
+      ${g.error?'<div class="error">'+esc(g.error)+'</div>':''}
+    </div>
+    <div class="gemini-input-area">
+      <input type="text" class="gemini-input" id="gemini-input" placeholder="Posez une question..." value="${esc(g.input)}">
+      <button class="gemini-send" onclick="sendGeminiMessage(document.getElementById('gemini-input').value)" ${g.loading?'disabled':''}>Envoyer</button>
+    </div>
+    <div class="config-link" onclick="S.app='api_config';render()">⚙ Clé API Groq</div>
+  </div>`;
+  return bar('Groq IA')+content;
+}
+
+// Vue configuration API
+function apiConfigView(bar){
+  return bar('Config API')+`<div class="body" style="justify-content:flex-start;padding:6px;font-size:8px;line-height:1.3;overflow-y:auto">
+    <div style="margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #eee"><b>🎬 YouTube</b></div>
+    <div style="margin-bottom:4px">
+      <label style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
+        <input type="radio" name="yt-mode" value="invidious" ${API_CONFIG.youtube_mode==='invidious'?'checked':''}>
+        <span>Invidious (gratuit, sans clé)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:4px">
+        <input type="radio" name="yt-mode" value="api" ${API_CONFIG.youtube_mode==='api'?'checked':''}>
+        <span>API officielle (clé requise)</span>
+      </label>
+    </div>
+    <input type="text" class="search-input" id="invidious-instance" placeholder="Instance Invidious" value="${esc(API_CONFIG.invidious_instance)}" style="margin-bottom:4px;font-size:8px">
+    <input type="text" class="search-input" id="yt-key" placeholder="Clé API YouTube (optionnel)" value="${esc(API_CONFIG.youtube_key)}" style="margin-bottom:6px;font-size:8px">
+
+    <div style="margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #eee"><b>🔍 Recherche Web</b></div>
+    <div style="margin-bottom:4px">
+      <label style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
+        <input type="radio" name="google-mode" value="duckduckgo" ${API_CONFIG.google_mode==='duckduckgo'?'checked':''}>
+        <span>SearXNG (gratuit, sans clé)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:4px">
+        <input type="radio" name="google-mode" value="api" ${API_CONFIG.google_mode==='api'?'checked':''}>
+        <span>API Google (clé requise)</span>
+      </label>
+    </div>
+    <input type="text" class="search-input" id="google-key" placeholder="Clé API Google (optionnel)" value="${esc(API_CONFIG.google_key)}" style="margin-bottom:4px;font-size:8px">
+    <input type="text" class="search-input" id="google-cse" placeholder="ID moteur de recherche (optionnel)" value="${esc(API_CONFIG.google_cse)}" style="margin-bottom:6px;font-size:8px">
+
+    <div style="margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #eee"><b>✨ Assistant IA : Groq</b></div>
+    <input type="password" class="search-input" id="ai-key" placeholder="Clé API Groq (gsk_...)" value="${esc(getGroqKey())}" style="margin-bottom:2px;font-size:8px" autocomplete="off">
+    <div style="font-size:7px;color:#666;margin-bottom:6px">Gratuit : console.groq.com → API Keys. La clé reste uniquement dans ce navigateur.</div>
+
+    <button class="search-btn" onclick="saveApiKeys()" style="width:100%;margin-bottom:6px">💾 Sauvegarder</button>
+
+  </div>`;
+}
+
+function saveApiKeys(){
+  // Récupérer les modes
+  const ytMode=document.querySelector('input[name="yt-mode"]:checked').value;
+  const googleMode=document.querySelector('input[name="google-mode"]:checked').value;
+  const aiKey=document.getElementById('ai-key').value.trim();
+
+  API_CONFIG.youtube_mode=ytMode;
+  API_CONFIG.youtube_key=document.getElementById('yt-key').value;
+  API_CONFIG.invidious_instance=document.getElementById('invidious-instance').value;
+  API_CONFIG.google_mode=googleMode;
+  API_CONFIG.google_key=document.getElementById('google-key').value;
+  API_CONFIG.google_cse=document.getElementById('google-cse').value;
+
+  try{localStorage.setItem('nw_groq_key',aiKey)}catch(e){}
+
+  saveApiConfig();
+  alert('Configuration sauvegardée !\n\nYouTube : '+ytMode+'\nRecherche : '+googleMode+'\nGroq : '+(aiKey?'clé enregistrée':'pas de clé'));
+  S.app='set';
+  render();
+}
+
+// Event listeners
+function setupYoutubeListeners(){
+  const items=document.querySelectorAll('.result-item');
+  items.forEach(item=>{
+    item.onclick=()=>{
+      const idx=+item.dataset.idx;
+      S.youtube.selected=idx;
+      S.youtube.videoId=S.youtube.results[idx].videoId;
+      render();
+    };
+  });
+}
+
+function setupGoogleListeners(){
+  const items=document.querySelectorAll('.result-item');
+  items.forEach(item=>{
+    item.onclick=()=>{
+      const idx=+item.dataset.idx;
+      S.google.selected=idx;
+      window.open(item.dataset.link,'_blank');
+    };
+  });
+}
+
+function setupGeminiListeners(){
+  const msgContainer=document.getElementById('gemini-messages');
+  if(msgContainer)msgContainer.scrollTop=msgContainer.scrollHeight;
+  const inp=document.getElementById('gemini-input');
+  if(inp)inp.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();sendGeminiMessage(inp.value)}};
+}
+
 function homeScroll(){
   const g=document.querySelector('#scr .grid');if(!g)return;
   const s=g.querySelector('.app.sel');
@@ -310,7 +714,7 @@ function py2js(src){
     else if(m=code.match(/^while\s+(.*):$/))r=open('while(__g()&&('+m[1]+')){');
     else if(m=code.match(/^for\s+(.+?)\s+in\s+(.+):$/))r=open('for(var '+(m[1].includes(',')?'['+m[1]+']':m[1])+' of '+m[2]+'){');
     else if(m=code.match(/^global\s+(.*)$/)){const d=[...st].reverse().find(x=>x.def);if(d)m[1].split(',').forEach(n=>d.g.add(n.trim()));r=cl+';'}
-    else if(m=code.match(/^import\s+(\w+)(?:\s+as\s+(\w+))?$/))r=cl+"__imp0('"+m[1]+"'"+(m[2]?",'"+m[2]+"'":'')+');';
+    else if(m=code.match(/^import\s+(\w+)(?:\s+as\s+(\w+))?$/))r=cl+"__imp0('"+m[1]+"'" +(m[2]?",'"+m[2]+"'":'')+');';
     else if(m=code.match(/^from\s+(\w+)\s+import\s+(.+)$/))r=cl+"__imp('"+m[1]+"','"+m[2].replace(/\s/g,'')+"');";
     else if(/^pass\b/.test(code))r=cl+';';
     else if(m=code.match(/^([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*=(?!=)\s*(.*)$/)){
@@ -340,7 +744,7 @@ async function pyRun(){
   const BI={Math:M,__ps:ps,printk,print:(...a)=>printk({},...a),__g:()=>{if(++cnt>3e6)throw new Error('Boucle trop longue : arrêt');return true},
     __t:a=>{a.t=1;return a},__in:(a,b)=>typeof b==='string'?b.includes(a):Array.isArray(b)?b.some(x=>x===a):a in b,
     __fd:(a,b)=>{if(b===0)throw new Error('ZeroDivisionError: division by zero');return M.floor(a/b)},
-    __mod:(a,b)=>{if(typeof a==='string'){let i=0;const A=Array.isArray(b)?b:[b];return a.replace(/%(?:\.(\d+))?([dsif%])/g,(m,d,t)=>{if(t==='%')return'%';const v=A[i++];return t==='f'?(+v).toFixed(d===undefined?6:d):t==='s'?ps(v):String(M.trunc(v))})}if(b===0)throw new Error('ZeroDivisionError: modulo by zero');return((a%b)+b)%b},
+    __mod:(a,b)=>{if(typeof a==='string'){let i=0;const A=Array.isArray(b)?b:[b];return a.replace(/%(\.(\d+))?([dsif%])/g,(m,d,t)=>{if(t==='%')return'%';const v=A[i++];return t==='f'?(+v).toFixed(d===undefined?6:d):t==='s'?ps(v):String(M.trunc(v))})}if(b===0)throw new Error('ZeroDivisionError: modulo by zero');return((a%b)+b)%b},
     __lc:async(it,c,f)=>{const r=[];for(const v of Array.from(it)){if(!c||await c(v))r.push(await f(v))}return r},
     __imp0:(m,a)=>{if(!MODS[m])throw new Error("ImportError: no module named '"+m+"'");store[a||m]=MODS[m]},
     __imp:(m,n)=>{const mod=MODS[m];if(!mod)throw new Error("ImportError: no module named '"+m+"'");(n==='*'?Object.keys(mod):n.split(',')).forEach(k=>{if(!(k in mod))throw new Error("ImportError: cannot import name '"+k+"'");store[k]=mod[k]})},
@@ -403,6 +807,51 @@ function elemView(bar){
   ELS.forEach((x,i)=>{const[rr,cc]=epos(i+1);h+=`<div style="position:absolute;left:${6+cc*17.4}px;top:${4+rr*14+(rr>=7?5:0)}px;width:16px;height:13px;background:${ecat(i+1)[1]};font-size:6.5px;line-height:13px;text-align:center;border-radius:2px;${i===S.el?'outline:2px solid #ffb531;z-index:2;font-weight:700':''}">${x[0]}</div>`});
   return h+'</div><div style="padding:2px 8px;font-size:10px;line-height:13px"><b style="font-size:15px">'+z+' '+e[0]+'</b> '+e[1]+'<br>Masse atomique : '+e[2]+' u<br>'+k[0]+' · Période '+(r>=7?r-1:r+1)+(r>=7?'':' · Groupe '+(c+1))+'</div>';
 }
+/* ===== Boîte à outils hiérarchique ===== */
+const mk=(l,s,t)=>[l,s,t];
+const TB_CALC=[
+ ['Nombres réels',[mk('abs(x)','Valeur absolue','abs(¦)'),mk('√(x)','Racine carrée','√(¦)'),mk('root(x,n)','Racine n-ième','root(¦)'),mk('floor(x)','Partie entière','floor(¦)'),mk('frac(x)','Partie fractionnaire','frac(¦)'),mk('ceil(x)','Plafond','ceil(¦)'),mk('round(x,n)','Arrondi','round(¦)'),mk('sign(x)','Signe','sign(¦)')]],
+ ['Arithmétique',[mk('gcd(a,b)','PGCD','gcd(¦)'),mk('lcm(a,b)','PPCM','lcm(¦)'),mk('quo(a,b)','Quotient entier','quo(¦)'),mk('rem(a,b)','Reste','rem(¦)')]],
+ ['Dénombrement',[mk('binomial(n,k)','Coefficient binomial','binomial(¦)'),mk('permute(n,k)','Arrangements','permute(¦)'),mk('n!','Factorielle','!')]],
+ ['Trigonométrie',[mk('sin(x)','Sinus','sin(¦)'),mk('cos(x)','Cosinus','cos(¦)'),mk('tan(x)','Tangente','tan(¦)'),mk('asin(x)','Arc sinus','asin(¦)'),mk('acos(x)','Arc cosinus','acos(¦)'),mk('atan(x)','Arc tangente','atan(¦)'),
+   ['Hyperbolique',[mk('sinh(x)','Sinus hyperbolique','sinh(¦)'),mk('cosh(x)','Cosinus hyperbolique','cosh(¦)'),mk('tanh(x)','Tangente hyperbolique','tanh(¦)'),mk('asinh(x)','Argument sinus hyperbolique','asinh(¦)'),mk('acosh(x)','Argument cosinus hyperbolique','acosh(¦)'),mk('atanh(x)','Argument tangente hyperbolique','atanh(¦)')]]]],
+ ['Exponentielle et log',[mk('exp(x)','Exponentielle','exp(¦)'),mk('ln(x)','Logarithme népérien','ln(¦)'),mk('log(x)','Logarithme décimal','log(¦)'),mk('10^x','Puissance de 10','10^(¦)')]],
+ ['Aléatoire',[mk('random()','Nombre dans [0,1[','random()'),mk('randint(a,b)','Entier aléatoire','randint(¦)')]],
+ ['Constantes',[mk('π','Pi','π'),mk('Ans','Dernier résultat','Ans'),mk('%','Pourcentage','%')]]
+];
+const TB_PY=[
+ ['Modules',[
+  ['math',[mk('import math','Importer le module','import math'),mk('from math import *','Importer toutes les fonctions','from math import *'),mk('sqrt(x)','Racine carrée','sqrt(¦)'),mk('pi','Constante π','pi'),mk('sin(x)','Sinus','sin(¦)'),mk('cos(x)','Cosinus','cos(¦)'),mk('tan(x)','Tangente','tan(¦)'),mk('exp(x)','Exponentielle','exp(¦)'),mk('log(x)','Logarithme népérien','log(¦)'),mk('floor(x)','Partie entière','floor(¦)'),mk('ceil(x)','Plafond','ceil(¦)'),mk('factorial(n)','Factorielle','factorial(¦)'),mk('gcd(a,b)','PGCD','gcd(¦)')]],
+  ['random',[mk('import random','Importer le module','import random'),mk('from random import *','Importer toutes les fonctions','from random import *'),mk('random()','Nombre dans [0,1[','random()'),mk('randint(a,b)','Entier aléatoire','randint(¦)'),mk('choice(liste)','Élément au hasard','choice(¦)'),mk('uniform(a,b)','Réel aléatoire','uniform(¦)'),mk('randrange(a,b)','Entier dans [a,b[','randrange(¦)')]],
+  ['time',[mk('import time','Importer le module','import time'),mk('from time import *','Importer toutes les fonctions','from time import *'),mk('sleep(t)','Attendre t secondes','sleep(¦)'),mk('monotonic()','Horloge en secondes','monotonic()')]],
+  ['kandinsky',[mk('import kandinsky','Importer le module','import kandinsky as kd'),mk('from kandinsky import *','Importer toutes les fonctions','from kandinsky import *'),mk('color(r,g,b)','Définir une couleur','color(¦)'),mk('fill_rect(x,y,l,h,c)','Rectangle plein','fill_rect(¦)'),mk('draw_string(t,x,y)','Écrire du texte','draw_string(¦)'),mk('set_pixel(x,y,c)','Colorier un pixel','set_pixel(¦)'),mk('get_pixel(x,y)','Couleur d\'un pixel','get_pixel(¦)')]],
+  ['ion',[mk('import ion','Importer le module','import ion'),mk('from ion import *','Importer toutes les fonctions','from ion import *'),mk('keydown(k)','Touche enfoncée ?','keydown(¦)'),mk('KEY_OK','Touche OK','KEY_OK'),mk('KEY_UP','Touche haut','KEY_UP'),mk('KEY_DOWN','Touche bas','KEY_DOWN'),mk('KEY_LEFT','Touche gauche','KEY_LEFT'),mk('KEY_RIGHT','Touche droite','KEY_RIGHT'),mk('KEY_EXE','Touche EXE','KEY_EXE'),mk('KEY_BACK','Touche retour','KEY_BACK')]]]],
+ ['Boucles et tests',[mk('if … :','Test','if ¦:'),mk('elif … :','Sinon si','elif ¦:'),mk('else :','Sinon','else:'),mk('for i in range(n) :','Boucle for','for i in range(¦):'),mk('for x in liste :','Parcourir une liste','for x in ¦:'),mk('while … :','Boucle while','while ¦:'),mk('break','Sortir de la boucle','break'),mk('continue','Itération suivante','continue'),mk('pass','Ne rien faire','pass')]],
+ ['Fonctions',[mk('def f(x) :','Définir une fonction','def f(¦):'),mk('return','Renvoyer une valeur','return '),mk('global','Variable globale','global '),mk('print(x)','Afficher','print(¦)'),mk('input(texte)','Saisie','input(¦)'),mk('len(x)','Longueur','len(¦)'),mk('range(n)','Suite d\'entiers','range(¦)'),mk('int(x)','Entier','int(¦)'),mk('float(x)','Flottant','float(¦)'),mk('str(x)','Chaîne','str(¦)'),mk('abs(x)','Valeur absolue','abs(¦)'),mk('min(a,b)','Minimum','min(¦)'),mk('max(a,b)','Maximum','max(¦)'),mk('sum(liste)','Somme','sum(¦)'),mk('round(x,n)','Arrondi','round(¦)'),mk('sorted(liste)','Liste triée','sorted(¦)')]],
+ ['Opérateurs',[mk('==','Égal','=='),mk('!=','Différent','!='),mk('<','Inférieur','<'),mk('>','Supérieur','>'),mk('<=','Inférieur ou égal','<='),mk('>=','Supérieur ou égal','>='),mk('and','Et','and '),mk('or','Ou','or '),mk('not','Non','not '),mk('in','Appartient à','in '),mk('//','Quotient entier','//'),mk('%','Reste','%'),mk('**','Puissance','**'),mk('+=','Ajouter à','+=')]],
+ ['Caractères',[mk(':','Deux-points',':'),mk(';','Point-virgule',';'),mk('"','Guillemets','"¦"'),mk("'",'Apostrophes',"'¦'"),mk('[ ]','Liste','[¦]'),mk('{ }','Dictionnaire','{¦}'),mk('_','Tiret bas','_'),mk('#','Commentaire','#'),mk('=','Affectation','=')]]
+];
+const tbOpen=(title,items)=>{S.tb={stack:[{title,items,i:0,st:0}]}};
+const tbIsMenu=x=>Array.isArray(x[1]);
+function tbKey(a){
+  const T=S.tb.stack[S.tb.stack.length-1],it=T.items;
+  if(a==='BACK'||a==='LEFT'){if(S.tb.stack.length>1)S.tb.stack.pop();else S.tb=null;return render()}
+  if(a==='UP')T.i=Math.max(0,T.i-1);else if(a==='DOWN')T.i=Math.min(it.length-1,T.i+1);
+  else if(a==='OK'||a==='EXE'||a==='RIGHT'){const x=it[T.i];if(!x)return;
+    if(tbIsMenu(x))S.tb.stack.push({title:x[0],items:x[1],i:0,st:0});
+    else if(a!=='RIGHT'||true){const b=buf(),t=x[2],k=t.indexOf('¦'),tx=t.replace('¦','');b.t=b.t.slice(0,b.i)+tx+b.t.slice(b.i);b.i+=k>=0?k:tx.length;S.tb=null;if(S.app==='py')pySave()}}
+  else return;
+  render();
+}
+function tbView(){
+  const T=S.tb.stack[S.tb.stack.length-1],it=T.items,H=x=>tbIsMenu(x)||!x[1]?22:30;
+  if(T.i<T.st)T.st=T.i;
+  for(;;){let h=0;for(let k=T.st;k<=T.i;k++)h+=H(it[k]);if(h>180&&T.st<T.i)T.st++;else break}
+  let h='',acc=0;
+  for(let k=T.st;k<it.length&&acc<180;k++){const x=it[k];acc+=H(x);const sel=k===T.i?' sel':'';
+    h+=tbIsMenu(x)?`<div class="tr${sel}"><span>${esc(x[0])}</span><span>›</span></div>`:`<div class="tr${sel}"><div>${esc(x[0])}${x[1]?`<small>${esc(x[1])}</small>`:''}</div></div>`}
+  return `<div class="tbm"><div class="bar"><span></span><span>${T.title}</span><span></span></div>${h}</div>`;
+}
 function draw(){
   const cv=document.getElementById('cv');if(!cv)return;
   const w=cv.width=cv.clientWidth*2,hh=cv.height=cv.clientHeight*2,c=cv.getContext('2d'),z=S.zoom,sx=w/(2*z),sy=sx;
@@ -419,15 +868,8 @@ function saveF(){try{localStorage.setItem('nw_files',JSON.stringify(S.files))}ca
 const SH={'sin(':'asin(','cos(':'acos(','tan(':'atan(','−':'='};
 function press(a,ex){
   if(a==='HOME'){S.pstop=true;S.app='home';S.plot=false;S.shift=false;S.alpha=false;S.tb=null;return render()}
-  if(S.tb){
-    if(a==='BACK'){S.tb=null;return render()}
-    if(a==='UP')S.tb.i=Math.max(0,S.tb.i-1);
-    else if(a==='DOWN')S.tb.i=Math.min(S.tb.items.length-1,S.tb.i+1);
-    else if(a==='OK'||a==='EXE'){const bb=buf(),tt=S.tb.items[S.tb.i][1];bb.t=bb.t.slice(0,bb.i)+tt+bb.t.slice(bb.i);bb.i+=tt.length;S.tb=null}
-    else return;
-    return render();
-  }
-  if(a==='BACK'){if(S.app==='py'&&S.pym==='out'){S.pstop=true;S.pym='edit';return render()}if((S.app==='inf'||S.app==='fin')&&S.nm>=0){S.nm=-1;S.nr=null;return render()}if(S.plot)S.plot=false;else if(S.app==='files')S.app='set';else S.app='home';return render()}
+  if(S.tb)return tbKey(a);
+  if(a==='BACK'){if(S.app==='api_config'){S.app='set';return render()}if(S.app==='py'&&S.pym==='out'){S.pstop=true;S.pym='edit';return render()}if((S.app==='inf'||S.app==='fin')&&S.nm>=0){S.nm=-1;S.nr=null;return render()}if(S.plot)S.plot=false;else if(S.app==='files')S.app='set';else S.app='home';return render()}
   if(S.app==='home'){
     const n=APPS.length;
     if(a==='LEFT')S.sel=(S.sel+n-1)%n;else if(a==='RIGHT')S.sel=(S.sel+1)%n;
@@ -441,17 +883,20 @@ function press(a,ex){
     else if(a==='DEL'&&S.files.length){S.files.splice(S.fsel,1);S.fsel=Math.max(0,S.fsel-1);saveF()}
     return render();
   }
-  if(S.app==='set'){if(a==='UP')S.ssel=0;else if(a==='DOWN')S.ssel=1;else if(a==='OK'||a==='EXE'){if(S.ssel===0)S.deg=!S.deg;else{S.app='files';S.fsel=0}}return render()}
+  if(S.app==='set'){
+    if(a==='UP')S.ssel=Math.max(0,S.ssel-1);
+    else if(a==='DOWN')S.ssel=Math.min(2,S.ssel+1);
+    else if(a==='OK'||a==='EXE'){
+      if(S.ssel===0)S.deg=!S.deg;
+      else if(S.ssel===1){S.app='files';S.fsel=0}
+      else if(S.ssel===2){S.app='api_config'}
+    }
+    return render();
+  }
+  if(S.app==='api_config')return render();
   if(S.app==='elem')return elemKey(a);
   if((S.app==='inf'||S.app==='fin')&&S.nm<0){const m=MENUS[S.app];if(a==='UP')S.msel=Math.max(0,S.msel-1);else if(a==='DOWN')S.msel=Math.min(m.length-1,S.msel+1);else if(a==='OK'||a==='EXE'){S.nm=S.msel;S.nr=null;S.n={t:'',i:0}}return render()}
   if(S.app==='py'&&S.pym==='out'){if((a==='OK'||a==='EXE')&&!S.prun){if(S.pcv)S.pshow=S.pshow==='cv'?'txt':'cv';else pyRun()}return render()}
-  if(EXTERNAL_APPS[S.app]){
-    if(a==='OK'||a==='EXE'){
-      const x=EXTERNAL_APPS[S.app];
-      window.open(x.url,'_blank','noopener,noreferrer');
-    }
-    return;
-  }
   if(!IMPL.includes(S.app))return;
   if(S.app==='graph'&&S.plot){
     if(a==='UP')S.zoom=Math.max(1,S.zoom/1.5);else if(a==='DOWN')S.zoom=Math.min(1000,S.zoom*1.5);
@@ -462,9 +907,8 @@ function press(a,ex){
   if(a==='ALPHA'){if(S.shift){S.alpha='lock';S.shift=false}else S.alpha=S.alpha?false:'once';return render()}
   const wS=S.shift,wA=S.alpha;S.shift=false;if(S.alpha==='once')S.alpha=false;
   if(ex&&!['UP','DOWN','LEFT','RIGHT','OK','EXE'].includes(a)){if(wA&&ex.l)a=ex.l;else if(wS&&ex.s)a=ex.s}
-  if(a==='@toolbox'&&S.app==='py'){S.tb={i:0,title:'Python',items:PYTB};return render()}
-  if(a==='@toolbox'){S.tb={i:0,title:'Boîte à outils',items:[['Valeur absolue  abs(','abs('],['Partie entière  floor(','floor('],['Plafond  ceil(','ceil('],['Arrondi  round(','round('],['Racine carrée  √(','√('],['Exponentielle  e^(','e^('],['Puissance de 10  10^(','10^('],['Logarithme népérien  ln(','ln('],['Logarithme décimal  log(','log('],['Factorielle  !','!'],['Pourcentage  %','%'],['Pi  π','π'],['Dernier résultat  Ans','Ans']]};return render()}
-  if(a==='@var'){S.tb={i:0,title:'Variables',items:[['Ans = '+fmt(S.ans),'Ans']].concat(Object.keys(S.vars).sort().map(k=>[k+' = '+fmt(S.vars[k]),k]))};return render()}
+  if(a==='@toolbox'){tbOpen(S.app==='py'?'Boîte à outils':'Boîte à outils',S.app==='py'?TB_PY:TB_CALC);return render()}
+  if(a==='@var'){tbOpen('Variables',[['Ans = '+fmt(S.ans),'Dernier résultat','Ans']].concat(Object.keys(S.vars).sort().map(k=>[k+' = '+fmt(S.vars[k]),'',k])));return render()}
   if(a==='@cut'||a==='@copy'){S.clip=b.t;if(a==='@cut'){b.t='';b.i=0}return render()}
   if(a==='@paste'){const c=S.clip||'';b.t=b.t.slice(0,b.i)+c+b.t.slice(b.i);b.i+=c.length;return render()}
   if(a==='@clear'){b.t='';b.i=0;return render()}
@@ -531,7 +975,6 @@ function fit(){
   nw.style.transform='scale('+s+')';st.style.width=(w*s)+'px';st.style.height=(h*s)+'px';
 }
 addEventListener('resize',fit);fit();homeScroll();
-
 </script>
 </body>
 </html>
