@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NumWorks V15</title>
+<title>NumWorks V16</title>
 <style>
 :root{--yellow:#ffb531;--dark:#414141}
 *{box-sizing:border-box}
@@ -227,7 +227,7 @@ function ev(s,x){
 }
 const fmt=r=>Number.isFinite(r)?String(parseFloat(r.toPrecision(10))).replace(/e\+?/,'ᴇ'):'Erreur';
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-const buf=()=>S[BUF[S.app]];
+const buf=()=>S.app==='py'&&S.pym==='out'?S.pi:S[BUF[S.app]];
 const line=b=>esc(b.t.slice(0,b.i))+'<span class="cu"></span>'+esc(b.t.slice(b.i));
 
 // ===== YouTube & Recherche web : recherche sans dépendre d'Invidious/SearXNG =====
@@ -238,7 +238,7 @@ const netErr=e=>e instanceof TypeError?'Connexion impossible (réseau ou navigat
 document.addEventListener('paste',e=>{
   if(e.target&&/^(INPUT|TEXTAREA)$/.test(e.target.tagName))return;
   const t=((e.clipboardData||window.clipboardData).getData('text')||'');if(!t)return;
-  const A=S.app,b=A==='py'&&S.pym==='edit'?S.y:A==='wiki'&&S.wiki.view==='list'?S.wk:A==='youtube'&&S.youtube.view==='list'?S.ytq:A==='google'&&S.google.view==='list'?S.ggq:null;
+  const A=S.app,b=A==='py'&&S.pym==='edit'?S.y:A==='py'&&S.pym==='out'&&!S.prun?S.pi:A==='wiki'&&S.wiki.view==='list'?S.wk:A==='youtube'&&S.youtube.view==='list'?S.ytq:A==='google'&&S.google.view==='list'?S.ggq:null;
   if(!b)return;e.preventDefault();const x=A==='py'?t:t.split('\n')[0];
   b.t=b.t.slice(0,b.i)+x+b.t.slice(b.i);b.i+=x.length;if(A==='py')pySave();render();
 });
@@ -665,7 +665,8 @@ function pyPos(){const b=S.y,ls=b.t.split('\n');let p=0,l=0;while(l<ls.length-1&
 function pyMove(a){const{ls,l,c}=pyPos(),l2=l+(a==='UP'?-1:1);if(l2<0||l2>=ls.length)return;let st=0;for(let k=0;k<l2;k++)st+=ls[k].length+1;S.y.i=st+Math.min(c,ls[l2].length)}
 function pyView(bar){
   if(S.pym==='out'&&S.pcv&&S.pshow==='cv')return '<canvas id="pycv" width="320" height="222" style="position:absolute;inset:0;width:320px;height:222px;z-index:5"></canvas>';
-  if(S.pym==='out')return bar('Console · BACK : script')+'<div class="body" style="justify-content:flex-start;font-size:10px;line-height:12px;white-space:pre-wrap">'+S.pout.slice(-15).map(esc).join('\n')+'</div>';
+  if(S.pym==='out'){const txt=S.pout.slice(-40).map(esc).join('\n')+(S.pcur?'\n'+esc(S.pcur):'');
+    return bar('Console · BACK : script')+'<div class="body" style="font-size:10px;line-height:12px;white-space:pre-wrap;overflow:hidden;justify-content:flex-end;font-family:Consolas,Menlo,monospace">'+(txt?'<div>'+txt+'</div>':'')+(S.prun?'':'<div>'+(S.pml?'... ':'&gt;&gt;&gt; ')+line(S.pi)+'</div>')+'</div>'}
   const{ls,l,c}=pyPos(),st=Math.max(0,l-11);
   return bar('Script · OK : exécuter')+'<div class="body" style="justify-content:flex-start;font-size:10px;line-height:13px;white-space:pre;padding:3px 6px">'+ls.slice(st,st+14).map((x,k)=>st+k===l?esc(x.slice(0,c))+'<span class="cu"></span>'+esc(x.slice(c)):(esc(x)||' ')).join('\n')+'</div>';
 }
@@ -688,108 +689,674 @@ document.getElementById('keys').addEventListener('pointerdown',e=>{const b=e.tar
 addEventListener('pointerup',()=>{if(S.lastv){_hold([S.lastv],false);S.lastv=null}});
 const ION={};[...Object.values(KM),...Object.values(PCK).flat()].forEach(k=>ION[k]=k);
 ION.keydown=async k=>{await yieldUI();pyChk();pyRefresh();return !!S.held[k]};
-/* méthodes Python sur les types JS */
-(()=>{const d=(C,o)=>Object.keys(o).forEach(n=>{if(!C.prototype['__py_'+n])Object.defineProperty(C.prototype,n,{value:o[n],enumerable:false,writable:true,configurable:true})});
- d(Array,{append(x){this.push(x)},insert(i,x){this.splice(i,0,x)},remove(x){const i=this.indexOf(x);if(i<0)throw new Error('ValueError: list.remove(x): x not in list');this.splice(i,1)},index(x){const i=this.indexOf(x);if(i<0)throw new Error('ValueError: not in list');return i},count(x){return this.filter(v=>v===x).length},extend(l){this.push(...l)},copy(){return[...this]},clear(){this.length=0}});
- const so=Array.prototype.sort;Object.defineProperty(Array.prototype,'sort',{value:function(f){return so.call(this,f||((a,b)=>a>b?1:a<b?-1:0))},writable:true,configurable:true});
- d(String,{upper(){return this.toUpperCase()},lower(){return this.toLowerCase()},strip(){return this.trim()},lstrip(){return this.trimStart()},rstrip(){return this.trimEnd()},startswith(s){return this.startsWith(s)},endswith(s){return this.endsWith(s)},find(s){return this.indexOf(s)},join(l){return l.join(this)},isdigit(){return /^\d+$/.test(this)},count(s){return this.split(s).length-1},
-   format(...a){let i=0;return this.replace(/\{(\d*)(?::\.(\d+)f)?\}/g,(m,n,p)=>{const v=a[n===''?i++:+n];return p?(+v).toFixed(p):typeof v==='string'?v:String(v)})}});
- d(Object,{keys(){return Object.keys(this)},values(){return Object.values(this)},items(){return Object.entries(this)},get(k,def=null){return k in this?this[k]:def}});
-})();
-/* ---- traduction d'une ligne ---- */
-const PYKW=['in','return','and','or','not','if','elif','while','is','else','await'];
-function pyTr(s,fns){
-  let q=null,o='';for(const ch of s){if(q){if(ch===q)q=null}else if(ch==='"'||ch==="'")q=ch;else if(ch==='#')break;o+=ch}
-  const SS=[];o=o.replace(/(f?"[^"\n]*"|f?'[^'\n]*')/g,m=>'__S'+(SS.push(m)-1)+'__');
-  const kw=/^\s*(for|if|elif|while|def|else)\b/.test(o),isDef=/^\s*def\b/.test(o);let m;
-  const tern=r=>{const t=r.match(/^(.+?)\s+if\s+(.+?)\s+else\s+(.+)$/);return t?'('+t[2]+')?('+t[1]+'):('+tern(t[3])+')':r};
-  if(!kw&&(m=o.match(/^(\s*return\s+|\s*[\w.\[\]]+\s*=(?!=)\s*)(.+)$/))&&/\sif\s.+\selse\s/.test(m[2]))o=m[1]+tern(m[2]);
-  o=o.replace(/\[([^\[\]]+?)\s+for\s+([\w,\s]+?)\s+in\s+([^\[\]]+?)(?:\s+if\s+([^\[\]]+?))?\]/g,(_,e,v,it,c)=>{v=v.trim();const p=v.includes(',')?'['+v+']':v;return '(await __lc('+it+','+(c?'async ('+p+')=>('+c+')':'null')+',async ('+p+')=>('+e+')))'});
-  if(!/^\s*for\b/.test(o)){const N='([\\w.]+(?:\\([^()]*\\))?(?:\\[[^\\]]*\\])?|\\[[^\\]]*\\])';o=o.replace(new RegExp(N+'\\s+not\\s+in\\s+'+N,'g'),'!__in($1,$2)').replace(new RegExp(N+'\\s+in\\s+'+N,'g'),'__in($1,$2)')}
-  o=o.replace(/\blambda\s*([\w,\s]*):\s*/g,'($1)=>').replace(/\bis\s+not\b/g,'!==').replace(/\bis\b/g,'===').replace(/\band\b/g,'&&').replace(/\bor\b/g,'||').replace(/\bnot\b/g,'!')
-   .replace(/\bTrue\b/g,'true').replace(/\bFalse\b/g,'false').replace(/\bNone\b/g,'null').replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/ᴇ/g,'e').replace(/π/g,'math.pi').replace(/\^/g,'**')
-   .replace(/\.split\(\)/g,'.trim().split(/\\s+/)').replace(/\.replace\(/g,'.replaceAll(');
-  const AT='(?:[\\w.]+(?:\\([^()]*\\))?|\\([^()]*\\))',PW='(?:\\s*\\*\\*\\s*-?'+AT+')*';
-  const L='(?<![*/%]\\s*)((?:(?<![\\w.)\\]]\\s*)-)?(?<![\\w.])'+AT+PW+'(?:\\s*(?:\\*|/(?!/))\\s*'+AT+PW+')*)\\s*',R='\\s*(-?'+AT+PW+')';
-  o=o.replace(new RegExp(L+'//'+R,'g'),'__fd($1,$2)').replace(new RegExp(L+'%'+R,'g'),'__mod($1,$2)').replace(/\/\//g,'/');
-  if(/^\s*print\(/.test(o)){const kws=[];o=o.replace(/,\s*(sep|end)\s*=\s*(__S\d+__|[\w.]+)/g,(_,k,v)=>{kws.push(k+':'+v);return ''});if(kws.length)o=o.replace(/^(\s*)print\(/,'$1printk({'+kws.join(',')+'},')}
-  if(!isDef)['ion.keydown','keydown','time.sleep','sleep',...fns].forEach(n=>{o=o.replace(new RegExp('(?<![\\w.])'+n.replace('.','\\.')+'\\s*\\(','g'),x=>'await '+x)});
-  const out=[],st=[];
-  const call=()=>{const pre=out.join('').replace(/\s+$/,''),w=pre.match(/(\w+)$/);return w?!PYKW.includes(w[1]):/[)\]]$/.test(pre)};
-  for(let i=0;i<o.length;i++){const ch=o[i];
-    if(ch==='('||ch==='['||ch==='{'){st.push({i:out.length,c:ch==='('&&call(),k:ch==='(',m:false});out.push(ch)}
-    else if(ch===','){if(st.length)st[st.length-1].m=true;out.push(ch)}
-    else if(ch===')'||ch===']'||ch==='}'){const e=st.pop();if(e&&e.k&&!e.c&&e.m&&!/^\s*=>/.test(o.slice(i+1))){out[e.i]='__t([';out.push('])')}else out.push(ch)}
-    else out.push(ch)}
-  return out.join('').replace(/__S(\d+)__/g,(_,n)=>{const p=SS[n];if(p[0]==='f')return'`'+p.slice(2,-1).replace(/`/g,'\\`').replace(/\{([^}:]*)(?::\.(\d+)f)?\}/g,(m,e,d)=>'${'+(d?'('+e+').toFixed('+d+')':'__ps('+e+')')+'}')+'`';return p});
+const PY=(()=>{
+/* ===== Interpréteur Python (sous-ensemble de MicroPython) : runtime ===== */
+let $S=[],$FILE='script.py';
+class PyErr{constructor(c,m){this.cls=c;this.msg=m===undefined?'':m;this.tb=$S.map(f=>[f.f,f.l])}}
+const EXC={};
+[['BaseException'],['Exception','BaseException'],['KeyboardInterrupt','BaseException'],['SystemExit','BaseException'],['StopIteration','Exception'],['ArithmeticError','Exception'],['ZeroDivisionError','ArithmeticError'],['OverflowError','ArithmeticError'],['AssertionError','Exception'],['AttributeError','Exception'],['ImportError','Exception'],['LookupError','Exception'],['IndexError','LookupError'],['KeyError','LookupError'],['MemoryError','Exception'],['NameError','Exception'],['OSError','Exception'],['RuntimeError','Exception'],['NotImplementedError','RuntimeError'],['SyntaxError','Exception'],['TypeError','Exception'],['ValueError','Exception']].forEach(([n,p])=>{EXC[n]={$exc:1,name:n,base:p?EXC[p]:null}});
+const E=(n,m)=>new PyErr(EXC[n],m);
+const isSub=(c,t)=>{for(;c;c=c.base)if(c===t)return true;return false};
+const synErr=(m,ln)=>{const e=E('SyntaxError',m);e.ln=ln;return e};
+class PyDict{constructor(){this.m=new Map}
+  static nk(k){return typeof k==='bigint'||typeof k==='boolean'?'i'+Number(k):typeof k==='number'?(Number.isInteger(k)?'i'+k:'f'+k):typeof k==='string'?'s'+k:Array.isArray(k)?'t'+k.map(x=>PyDict.nk(x)).join(','):k===null?'n':'o'+(PyDict.id.get(k)||PyDict.id.set(k,PyDict.id.size+1).get(k))}
+  get(k){const e=this.m.get(PyDict.nk(k));return e&&e[1]}has(k){return this.m.has(PyDict.nk(k))}
+  set(k,v){const n=PyDict.nk(k),e=this.m.get(n);if(e)e[1]=v;else this.m.set(n,[k,v])}
+  del(k){if(!this.m.delete(PyDict.nk(k)))throw E('KeyError',$repr(k))}
+  get size(){return this.m.size}keys(){return[...this.m.values()].map(e=>e[0])}vals(){return[...this.m.values()].map(e=>e[1])}items(){return[...this.m.values()].map(e=>tup([e[0],e[1]]))}}
+PyDict.id=new Map;
+class PySet{constructor(a){this.m=new Map;for(const x of a||[])this.m.set(PyDict.nk(x),x)}add(x){this.m.set(PyDict.nk(x),x)}has(x){return this.m.has(PyDict.nk(x))}get size(){return this.m.size}vals(){return[...this.m.values()]}}
+class PyRange{constructor(a,b,c){this.a=a;this.b=b;this.c=c;if(c===0n)throw E('ValueError','zero step')}
+  get n(){const{a,b,c}=this;const l=c>0n?(b-a+c-1n)/c:(a-b-c-1n)/(-c);return l>0n?Number(l):0}
+  at(i){return this.a+BigInt(i)*this.c}*[Symbol.iterator](){let v=this.a;if(this.c>0n)for(;v<this.b;v+=this.c)yield v;else for(;v>this.b;v+=this.c)yield v}}
+class KW{constructor(o){this.o=o}}
+class ClsObj{constructor(n,b,d){this.name=n;this.base=b;this.d=d}}
+class Inst{constructor(c){this.cls=c;this.d=Object.create(null)}}
+class BM{constructor(s,f){this.s=s;this.f=f}}
+const tup=a=>{a.t=1;return a};
+const isInt=v=>typeof v==='bigint';
+const num=v=>typeof v==='boolean'?(v?1n:0n):v;
+const toF=v=>typeof v==='bigint'?Number(v):v;
+const isNum=v=>typeof v==='bigint'||typeof v==='number'||typeof v==='boolean';
+function $tn(v){return v===null?'NoneType':typeof v==='bigint'?'int':typeof v==='number'?'float':typeof v==='string'?'str':typeof v==='boolean'?'bool':Array.isArray(v)?(v.t?'tuple':'list'):v instanceof PyDict?'dict':v instanceof PySet?'set':v instanceof PyRange?'range':v instanceof Inst?v.cls.name:v instanceof ClsObj?'type':typeof v==='function'||v instanceof BM?'function':'object'}
+const fr=x=>{if(Number.isNaN(x))return'nan';if(!isFinite(x))return x>0?'inf':'-inf';if(Number.isInteger(x)&&Math.abs(x)<1e16)return x.toFixed(1);let s=(Math.abs(x)>=1e16||(x!==0&&Math.abs(x)<1e-4))?x.toExponential():String(x);const m=s.match(/^(-?[\d.]+)e([+-])(\d+)$/);return m?m[1]+'e'+m[2]+m[3].padStart(2,'0'):s};
+function $repr(v){
+  if(v===null||v===undefined)return'None';if(v===true)return'True';if(v===false)return'False';
+  if(typeof v==='bigint')return String(v);if(typeof v==='number')return fr(v);
+  if(typeof v==='string'){const q=v.includes("'")&&!v.includes('"')?'"':"'";return q+v.replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/\t/g,'\\t').replace(/\r/g,'\\r').replace(new RegExp(q,'g'),'\\'+q)+q}
+  if(Array.isArray(v))return v.t?'('+v.map($repr).join(', ')+(v.length===1?',':'')+')':'['+v.map($repr).join(', ')+']';
+  if(v instanceof PyDict)return'{'+v.items().map(e=>$repr(e[0])+': '+$repr(e[1])).join(', ')+'}';
+  if(v instanceof PySet)return v.size?'{'+v.vals().map($repr).join(', ')+'}':'set()';
+  if(v instanceof PyRange)return'range('+v.a+', '+v.b+(v.c!==1n?', '+v.c:'')+')';
+  if(v instanceof Inst){const f=lookup(v.cls,'__repr__');if(f)return syncCall(f,[v]);return'<'+v.cls.name+' object>'}
+  if(v instanceof ClsObj)return"<class '"+v.name+"'>";
+  if(v&&v.$exc)return"<class '"+v.name+"'>";
+  if(v instanceof PyErr)return v.cls.name+'('+(v.msg===''?'':$repr(v.msg))+')';
+  if(typeof v==='function'){if(v.$tn)return"<class '"+v.$tn+"'>";return v.$m?'<function '+v.$m.name+'>':'<built-in function>'}
+  if(v&&v.$mod)return"<module '"+v.$mod+"'>";
+  return String(v)}
+function $str(v){if(typeof v==='string')return v;if(v instanceof PyErr)return v.msg;if(v instanceof Inst){const f=lookup(v.cls,'__str__');if(f)return syncCall(f,[v])}return $repr(v)}
+function syncCall(f,a){return'<'+a[0].cls.name+' object>'}
+const hasDun=v=>v instanceof Inst&&(lookup(v.cls,'__str__')||lookup(v.cls,'__repr__'));
+const strA=async v=>{if(v instanceof Inst){const f=lookup(v.cls,'__str__')||lookup(v.cls,'__repr__');if(f)return $ca(f,[v])}return $str(v)};
+function $b(v){return v===null||v===undefined?false:typeof v==='bigint'?v!==0n:typeof v==='number'?v!==0:typeof v==='string'||Array.isArray(v)?v.length>0:v instanceof PyDict||v instanceof PySet?v.size>0:v instanceof PyRange?v.n>0:v===true}
+const ty=(a,b,op)=>E('TypeError',"unsupported types for "+op+": '"+$tn(a)+"', '"+$tn(b)+"'");
+function arith(a,b,op){
+  a=num(a);b=num(b);
+  if(isInt(a)&&isInt(b)){switch(op){case'__add__':return a+b;case'__sub__':return a-b;case'__mul__':return a*b;
+    case'__truediv__':if(b===0n)throw E('ZeroDivisionError','divide by zero');return Number(a)/Number(b);
+    case'__floordiv__':{if(b===0n)throw E('ZeroDivisionError','divide by zero');let q=a/b;if((a%b!==0n)&&((a<0n)!==(b<0n)))q-=1n;return q}
+    case'__mod__':{if(b===0n)throw E('ZeroDivisionError','divide by zero');const r=a%b;return r!==0n&&((r<0n)!==(b<0n))?r+b:r}
+    case'__pow__':if(b>=0n)return a**b;if(a===0n)throw E('ZeroDivisionError','0.0 to a negative or complex power');return Number(a)**Number(b)}}
+  if((isInt(a)||typeof a==='number')&&(isInt(b)||typeof b==='number')){const x=toF(a),y=toF(b);
+    switch(op){case'__add__':return x+y;case'__sub__':return x-y;case'__mul__':return x*y;
+    case'__truediv__':if(y===0)throw E('ZeroDivisionError','divide by zero');return x/y;
+    case'__floordiv__':if(y===0)throw E('ZeroDivisionError','divide by zero');return Math.floor(x/y);
+    case'__mod__':{if(y===0)throw E('ZeroDivisionError','divide by zero');const r=x%y;return r!==0&&((r<0)!==(y<0))?r+y:r}
+    case'__pow__':if(x===0&&y<0)throw E('ZeroDivisionError','0.0 to a negative or complex power');if(x<0&&!Number.isInteger(y))throw E('ValueError','complex results not supported');return x**y}}
+  return undefined}
+const $add=(a,b)=>{if(typeof a==='bigint'&&typeof b==='bigint')return a+b;if(typeof a==='number'&&typeof b==='number')return a+b;
+  const r=arith(a,b,'__add__');if(r!==undefined)return r;
+  if(typeof a==='string'&&typeof b==='string')return a+b;
+  if(Array.isArray(a)&&Array.isArray(b)&&!a.t===!b.t){const c=a.concat(b);if(a.t)c.t=1;return c}
+  if(a instanceof Inst){const f=lookup(a.cls,'__add__');if(f)return $c(f,[a,b])}
+  throw ty(a,b,'__add__')};
+const $sub=(a,b)=>{if(typeof a==='bigint'&&typeof b==='bigint')return a-b;const r=arith(a,b,'__sub__');if(r!==undefined)return r;
+  if(a instanceof PySet&&b instanceof PySet)return new PySet(a.vals().filter(x=>!b.has(x)));
+  if(a instanceof Inst){const f=lookup(a.cls,'__sub__');if(f)return $c(f,[a,b])}throw ty(a,b,'__sub__')};
+const rep=(s,n)=>{n=Number(num(n));if(n<0)n=0;if(typeof s==='string')return s.repeat(n);const r=[];for(let i=0;i<n;i++)r.push(...s);if(s.t)r.t=1;return r};
+const $mul=(a,b)=>{if(typeof a==='bigint'&&typeof b==='bigint')return a*b;const r=arith(a,b,'__mul__');if(r!==undefined)return r;
+  if((typeof a==='string'||Array.isArray(a))&&(typeof b==='bigint'||typeof b==='boolean'))return rep(a,b);
+  if((typeof b==='string'||Array.isArray(b))&&(typeof a==='bigint'||typeof a==='boolean'))return rep(b,a);
+  if(a instanceof Inst){const f=lookup(a.cls,'__mul__');if(f)return $c(f,[a,b])}throw ty(a,b,'__mul__')};
+const $div=(a,b)=>{const r=arith(a,b,'__truediv__');if(r!==undefined)return r;if(a instanceof Inst){const f=lookup(a.cls,'__truediv__');if(f)return $c(f,[a,b])}throw ty(a,b,'__truediv__')};
+const $fdiv=(a,b)=>{const r=arith(a,b,'__floordiv__');if(r!==undefined)return r;throw ty(a,b,'__floordiv__')};
+const $pow=(a,b)=>{const r=arith(a,b,'__pow__');if(r!==undefined)return r;throw ty(a,b,'__pow__')};
+const $mod=(a,b)=>{if(typeof a==='string')return pctFmt(a,b);const r=arith(a,b,'__mod__');if(r!==undefined)return r;throw ty(a,b,'__mod__')};
+function $bit(op,a,b){a=num(a);b=num(b);if(!isInt(a)||!isInt(b))throw ty(a,b,'__'+op+'__');
+  switch(op){case'and':return a&b;case'or':return a|b;case'xor':return a^b;case'lshift':return a<<b;case'rshift':return a>>b}}
+const $neg=a=>{a=num(a);if(isInt(a)||typeof a==='number')return-a;throw E('TypeError',"unsupported type for __neg__: '"+$tn(a)+"'")};
+const $inv=a=>{a=num(a);if(isInt(a))return~a;throw E('TypeError',"unsupported type for __invert__: '"+$tn(a)+"'")};
+function $eq(a,b){
+  if(a===b)return true;
+  if(isNum(a)&&isNum(b))return num(a)==num(b);
+  if(Array.isArray(a)&&Array.isArray(b))return a.length===b.length&&a.every((x,i)=>$eq(x,b[i]));
+  if(a instanceof PyDict&&b instanceof PyDict)return a.size===b.size&&a.keys().every(k=>b.has(k)&&$eq(a.get(k),b.get(k)));
+  if(a instanceof PySet&&b instanceof PySet)return a.size===b.size&&a.vals().every(x=>b.has(x));
+  if(a instanceof PyRange&&b instanceof PyRange)return $eq([...a],[...b]);
+  if(a instanceof Inst){const f=lookup(a.cls,'__eq__');if(f)return $c(f,[a,b])}
+  return false}
+function cmp(a,b,op){
+  a=num(a);b=num(b);
+  if((isInt(a)||typeof a==='number')&&(isInt(b)||typeof b==='number'))return a<b?-1:a>b?1:0;
+  if(typeof a==='string'&&typeof b==='string')return a<b?-1:a>b?1:0;
+  if(Array.isArray(a)&&Array.isArray(b)){for(let i=0;i<Math.min(a.length,b.length);i++){if(!$eq(a[i],b[i]))return cmp(a[i],b[i],op)}return a.length-b.length}
+  throw ty(a,b,op)}
+const dun=(a,n,args)=>{if(a instanceof Inst){const f=lookup(a.cls,n);if(f)return $c(f,args)}};
+const $lt=(a,b)=>{if(typeof a==='bigint'&&typeof b==='bigint')return a<b;const d=dun(a,'__lt__',[a,b]);if(d!==undefined)return d;return cmp(a,b,'__lt__')<0};
+const $le=(a,b)=>{if(typeof a==='bigint'&&typeof b==='bigint')return a<=b;const d=dun(a,'__le__',[a,b]);if(d!==undefined)return d;return cmp(a,b,'__le__')<=0};
+const $gt=(a,b)=>{if(typeof a==='bigint'&&typeof b==='bigint')return a>b;const d=dun(a,'__gt__',[a,b]);if(d!==undefined)return d;return cmp(a,b,'__gt__')>0};
+const $ge=(a,b)=>{if(typeof a==='bigint'&&typeof b==='bigint')return a>=b;const d=dun(a,'__ge__',[a,b]);if(d!==undefined)return d;return cmp(a,b,'__ge__')>=0};
+function $in(a,b){
+  if(typeof b==='string'){if(typeof a!=='string')throw E('TypeError',"'in <string>' requires string as left operand");return b.includes(a)}
+  if(Array.isArray(b))return b.some(x=>$eq(x,a));
+  if(b instanceof PyDict||b instanceof PySet)return b.has(a);
+  if(b instanceof PyRange)return[...b].some(x=>$eq(x,a));
+  throw E('TypeError',"'"+$tn(b)+"' object isn't iterable")}
+function $iter(x){
+  if(Array.isArray(x)||typeof x==='string')return x;
+  if(x instanceof PyRange)return x;
+  if(x instanceof PyDict)return x.keys();
+  if(x instanceof PySet)return x.vals();
+  throw E('TypeError',"'"+$tn(x)+"' object isn't iterable")}
+function $unp(v,n){const a=[...$iter(v)];if(a.length<n)throw E('ValueError','need more than '+a.length+' values to unpack');if(a.length>n)throw E('ValueError','too many values to unpack (expected '+n+')');return a}
+const ix=(i,len,what)=>{if(typeof i==='boolean')i=i?1n:0n;if(!isInt(i))throw E('TypeError',what+' indices must be integers');let k=Number(i);if(k<0)k+=len;if(k<0||k>=len)throw E('IndexError',what+' index out of range');return k};
+function $idx(o,i){
+  if(Array.isArray(o))return o[ix(i,o.length,o.t?'tuple':'list')];
+  if(typeof o==='string')return o[ix(i,o.length,'string')];
+  if(o instanceof PyDict){if(!o.has(i))throw E('KeyError',$repr(i));return o.get(i)}
+  if(o instanceof PyRange)return o.at(ix(i,o.n,'range'));
+  if(o instanceof Inst){const f=lookup(o.cls,'__getitem__');if(f)return $c(f,[o,i])}
+  throw E('TypeError',"'"+$tn(o)+"' object isn't subscriptable")}
+function $sidx(o,i,v){
+  if(Array.isArray(o)&&!o.t){o[ix(i,o.length,'list')]=v;return}
+  if(o instanceof PyDict){o.set(i,v);return}
+  if(o instanceof Inst){const f=lookup(o.cls,'__setitem__');if(f){$c(f,[o,i,v]);return}}
+  throw E('TypeError',"'"+$tn(o)+"' object doesn't support item assignment")}
+function $del(o,i){if(Array.isArray(o)&&!o.t){o.splice(ix(i,o.length,'list'),1);return}if(o instanceof PyDict){o.del(i);return}throw E('TypeError',"'"+$tn(o)+"' object doesn't support item deletion")}
+function $slice(o,a,b,c){
+  const isStr=typeof o==='string',arr=isStr?o:o instanceof PyRange?[...o]:Array.isArray(o)?o:null;if(!arr)throw E('TypeError',"'"+$tn(o)+"' object isn't subscriptable");
+  const n=arr.length,st=c===undefined||c===null?1:Number(c);if(st===0)throw E('ValueError','slice step cannot be zero');
+  const f=(v,d)=>{if(v===undefined||v===null)return d;let k=Number(num(v));if(k<0)k+=n;return k};
+  let lo,hi;if(st>0){lo=Math.min(Math.max(f(a,0),0),n);hi=Math.min(Math.max(f(b,n),0),n)}else{lo=Math.min(Math.max(f(a,n-1),-1),n-1);hi=Math.min(Math.max(f(b,-1),-1),n-1)}
+  const r=[];if(st>0){for(let i=lo;i<hi;i+=st)r.push(arr[i])}else{for(let i=lo;i>hi;i+=st)r.push(arr[i])}
+  if(isStr)return r.join('');if(o.t)r.t=1;return r}
+const isExc=c=>{for(;c;c=c.base)if(c.$exc)return true;return false};
+function lookup(c,n){for(;c;c=c.base){if(c instanceof ClsObj&&n in c.d)return c.d[n]}return undefined}
+function $attr(o,n){
+  if(o&&o.$sup){const f=lookup(o.b,n);if(f!==undefined)return new BM(o.self,f);if(n==='__init__')return()=>null;throw E('AttributeError',"'super' object has no attribute '"+n+"'")}
+  if(o instanceof Inst){if(n in o.d)return o.d[n];const f=lookup(o.cls,n);if(f!==undefined)return typeof f==='function'?new BM(o,f):f;throw E('AttributeError',"'"+o.cls.name+"' object has no attribute '"+n+"'")}
+  if(o instanceof ClsObj){const f=lookup(o,n);if(f!==undefined)return f;throw E('AttributeError',"type object '"+o.name+"' has no attribute '"+n+"'")}
+  if(o&&o.$mod){if(n in o)return o[n];throw E('AttributeError',"module '"+o.$mod+"' has no attribute '"+n+"'")}
+  if(o instanceof PyErr){if(n==='args')return tup([o.msg]);}
+  const t=$tn(o),m=METH[t]&&METH[t][n];
+  if(m)return(...a)=>m(o,...a);
+  throw E('AttributeError',"'"+t+"' object has no attribute '"+n+"'")}
+function $sattr(o,n,v){if(o instanceof Inst){o.d[n]=v;return}if(o instanceof ClsObj){o.d[n]=v;return}throw E('AttributeError',"'"+$tn(o)+"' object has no attribute '"+n+"'")}
+function $cls(name,base,d){return new ClsObj(name,base,d)}
+function $sup(self,cname){const c=RT.G[cname];return{$sup:1,self,b:c&&c.base}}
+const callUser=(f,a,kw)=>{
+  const m=f.$m,n=m.p.length,b=new Array(n);
+  for(let i=0;i<n&&i<a.length;i++)b[i]=a[i];
+  const extra=a.slice(n);let va=null,kd=null;
+  if(m.va)va=tup(extra);else if(extra.length)throw E('TypeError','function takes '+n+' positional arguments but '+a.length+' were given');
+  if(m.kw)kd=new PyDict;
+  if(kw)for(const k in kw){const i=m.p.indexOf(k);if(i>=0){if(b[i]!==undefined)throw E('TypeError',"function got multiple values for argument '"+k+"'");b[i]=kw[k]}else if(kd)kd.set(k,kw[k]);else throw E('TypeError',"function got an unexpected keyword argument '"+k+"'")}
+  let miss=0;for(let i=0;i<n;i++)if(b[i]===undefined){if(m.d[i]!==undefined)b[i]=m.d[i];else miss++}
+  if(miss)throw E('TypeError','function missing '+miss+' required positional arguments');
+  if(m.va)b.push(va);if(m.kw)b.push(kd);
+  return f(...b)};
+function $c(f,a,kw){
+  if(typeof f==='function'){if(f.$m)return callUser(f,a,kw);return kw?f(...a,new KW(kw)):f(...a)}
+  if(f instanceof BM)return $c(f.f,[f.s,...a],kw);
+  if(f instanceof ClsObj){
+    if(isExc(f)){const e=new PyErr(f,a.length?$str(a[0]):'');e.args=a;return e}
+    return(async()=>{const i=new Inst(f),init=lookup(f,'__init__');if(init){const x=$c(init,[i,...a],kw);if(x instanceof Promise)await x}return i})()}
+  if(f&&f.$exc){const e=new PyErr(f,a.length?$str(a[0]):'');e.args=a;return e}
+  throw E('TypeError',"'"+$tn(f)+"' object isn't callable")}
+function $wrap(e){
+  if(e instanceof PyErr)return e;
+  if(e instanceof RangeError)return E('RuntimeError','maximum recursion depth exceeded');
+  if(e&&e.message==='KeyboardInterrupt')return E('KeyboardInterrupt','');
+  return E('Exception',(e&&e.message)||String(e))}
+function $isinst(e,t){if(Array.isArray(t))return t.some(x=>$isinst(e,x));return e instanceof PyErr&&isSub(e.cls,t)}
+function $raise(v){if(v instanceof PyErr)throw v;if(v&&v.$exc)throw new PyErr(v,'');if(v instanceof ClsObj)throw new PyErr(v,'');throw E('TypeError','exceptions must derive from BaseException')}
+function $g(n){const v=RT.G[n];if(v!==undefined)return v;if(n in B)return B[n];throw E('NameError',"name '"+n+"' isn't defined")}
+function $fn(name,p,d,va,kw,impl){impl.$m={name,p,d,va:!!va,kw:!!kw};return impl}
+
+/* ---- formats ---- */
+const $ca=async(f,a,kw)=>{const r=$c(f,a,kw);return r instanceof Promise?await r:r};
+const kwOf=a=>{const l=a[a.length-1];return l instanceof KW?[a.slice(0,-1),l.o]:[a,{}]};
+function fmtSpec(v,spec){
+  const m=/^(?:(.)?([<>^=]))?([+\- ])?(0)?(\d+)?(,)?(?:\.(\d+))?([bcdeEfFgGnosxX%])?$/.exec(spec||'');
+  if(!m)throw E('ValueError','invalid format specifier');
+  let[,fill,al,sign,zero,w,comma,prec,type]=m;v=num(v);
+  let s,isN=isInt(v)||typeof v==='number';
+  if(type===undefined&&!spec)return $str(v);
+  if(!type)type=typeof v==='string'?'s':isInt(v)?'d':(prec!==undefined?'g':null);
+  if(type==='s'||type===null){s=type===null?(typeof v==='number'?fr(v):$str(v)):(typeof v==='string'?v:(()=>{throw E('ValueError','unknown format code \'s\' for object of type \''+$tn(v)+'\'')})());if(prec!==undefined&&type==='s')s=s.slice(0,+prec)}
+  else{
+    if(!isN)throw E('ValueError',"unknown format code '"+type+"' for object of type '"+$tn(v)+"'");
+    const neg=(typeof v==='bigint'?v<0n:v<0||Object.is(v,-0)),a=typeof v==='bigint'?(neg?-v:v):Math.abs(v),f=toF(a);
+    switch(type){case'd':case'n':if(typeof v==='number')throw E('ValueError',"unknown format code 'd' for object of type 'float'");s=String(a);break;
+      case'f':case'F':s=f.toFixed(prec===undefined?6:+prec);break;
+      case'e':case'E':{s=f.toExponential(prec===undefined?6:+prec).replace(/e([+-])(\d)$/,'e$10$2');if(type==='E')s=s.toUpperCase();break}
+      case'g':case'G':{const P=prec===undefined?6:Math.max(1,+prec),ex=f===0?0:Math.floor(Math.log10(f));s=(ex<-4||ex>=P)?f.toExponential(P-1).replace(/\.?0+e/,'e').replace(/e([+-])(\d)$/,'e$10$2'):String(+f.toPrecision(P));break}
+      case'x':s=BigInt(a).toString(16);break;case'X':s=BigInt(a).toString(16).toUpperCase();break;case'b':s=BigInt(a).toString(2);break;case'o':s=BigInt(a).toString(8);break;
+      case'%':s=(f*100).toFixed(prec===undefined?6:+prec)+'%';break;case'c':s=String.fromCharCode(Number(a));break}
+    if(comma){const p=s.split('.');p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,',');s=p.join('.')}
+    const sg=neg?'-':sign==='+'?'+':sign===' '?' ':'';
+    if(zero&&w&&!al){s=sg+s.padStart(+w-sg.length,'0');return s}
+    s=sg+s;if(!al)al='>'}
+  if(w&&s.length<+w){const n=+w-s.length,fc=fill||(zero?'0':' ');al=al||'<';s=al==='<'?s+fc.repeat(n):al==='>'||al==='='?fc.repeat(n)+s:fc.repeat(Math.floor(n/2))+s+fc.repeat(n-Math.floor(n/2))}
+  return s}
+function pctFmt(f,args){
+  const A=Array.isArray(args)&&args.t?args:[args];let i=0;
+  return f.replace(/%([-+ 0]*)(\d+)?(?:\.(\d+))?([diouxXeEfFgGcsr%])/g,(m,fl,w,p,t)=>{
+    if(t==='%')return'%';if(i>=A.length)throw E('TypeError','not enough arguments for format string');const v=A[i++];let s;
+    if(t==='s')s=$str(v);else if(t==='r')s=$repr(v);else if(t==='c')s=typeof v==='string'?v:String.fromCharCode(Number(v));
+    else{const spec=(fl.includes('+')?'+':'')+(fl.includes('0')&&!fl.includes('-')?'0':'')+(!fl.includes('-')&&w?w:'')+(p!==undefined?'.'+p:'')+(('di').includes(t)||t==='u'||t==='i'?'d':t==='o'?'o':t==='u'?'d':t);s=fmtSpec(('di').includes(t)&&typeof v==='number'?BigInt(Math.trunc(v)):v,spec)}
+    if(w&&s.length<+w)s=fl.includes('-')?s.padEnd(+w):s.padStart(+w);return s})}
+function strFormat(f,args){
+  const[a,kw]=kwOf(args);let auto=0;
+  return f.replace(/\{\{|\}\}|\{([^{}!:]*)(?:!([rs]))?(?::([^{}]*))?\}/g,(m,k,cv,sp)=>{
+    if(m==='{{')return'{';if(m==='}}')return'}';
+    let v;if(k===''||k===undefined){if(auto>=a.length)throw E('IndexError','tuple index out of range');v=a[auto++]}else if(/^\d+$/.test(k)){if(+k>=a.length)throw E('IndexError','tuple index out of range');v=a[+k]}else{if(!(k in kw))throw E('KeyError',$repr(k));v=kw[k]}
+    if(cv==='r')v=$repr(v);else if(cv==='s')v=$str(v);return fmtSpec(v,sp)})}
+const $fv=(v,spec,cv)=>{if(cv==='r')v=$repr(v);else if(cv==='s')v=$str(v);return spec?fmtSpec(v,spec):$str(v)};
+/* ---- méthodes des types ---- */
+const needStr=x=>{if(typeof x!=='string')throw E('TypeError','must be str, not '+$tn(x))};
+const sortBy=async(arr,key,rev)=>{const ks=[];for(const x of arr)ks.push(key?await $ca(key,[x]):x);const idx=arr.map((_,i)=>i);idx.sort((i,j)=>$lt(ks[i],ks[j])?-1:$lt(ks[j],ks[i])?1:0);if(rev)idx.reverse();return idx.map(i=>arr[i])};
+const METH={
+ str:{upper:s=>s.toUpperCase(),lower:s=>s.toLowerCase(),strip:(s,c)=>c?s.replace(new RegExp('^['+c.replace(/[\]\\^-]/g,'\\$&')+']+|['+c.replace(/[\]\\^-]/g,'\\$&')+']+$','g'),''):s.trim(),lstrip:s=>s.trimStart(),rstrip:s=>s.trimEnd(),
+  split:(s,sep,mx)=>{if(sep===undefined||sep===null)return s.trim()===''?[]:s.trim().split(/\s+/);if(sep==='')throw E('ValueError','empty separator');const p=s.split(sep);if(mx!==undefined&&p.length>Number(mx)+1){const h=p.slice(0,Number(mx));h.push(p.slice(Number(mx)).join(sep));return h}return p},
+  join:(s,l)=>{const a=[...$iter(l)];a.forEach(x=>{if(typeof x!=='string')throw E('TypeError',"can't convert '"+$tn(x)+"' object to str implicitly")});return a.join(s)},
+  replace:(s,a,b,n)=>n===undefined?s.split(a).join(b):(()=>{let c=Number(n),r='',i=0;while(c-->0){const j=s.indexOf(a,i);if(j<0)break;r+=s.slice(i,j)+b;i=j+a.length}return r+s.slice(i)})(),
+  startswith:(s,p)=>Array.isArray(p)?p.some(x=>s.startsWith(x)):s.startsWith(p),endswith:(s,p)=>Array.isArray(p)?p.some(x=>s.endsWith(x)):s.endsWith(p),
+  find:(s,t)=>BigInt(s.indexOf(t)),index:(s,t)=>{const i=s.indexOf(t);if(i<0)throw E('ValueError','substring not found');return BigInt(i)},count:(s,t)=>BigInt(t===''?s.length+1:s.split(t).length-1),
+  isdigit:s=>/^\d+$/.test(s),isalpha:s=>/^[A-Za-zÀ-ÿ]+$/.test(s),isalnum:s=>/^[A-Za-z0-9À-ÿ]+$/.test(s),isspace:s=>/^\s+$/.test(s),isupper:s=>s!==s.toLowerCase()&&s===s.toUpperCase(),islower:s=>s!==s.toUpperCase()&&s===s.toLowerCase(),
+  capitalize:s=>s.charAt(0).toUpperCase()+s.slice(1).toLowerCase(),title:s=>s.toLowerCase().replace(/(^|[^A-Za-zÀ-ÿ])([a-zà-ÿ])/g,(m,a,b)=>a+b.toUpperCase()),
+  center:(s,w,c=' ')=>{const n=Number(w)-s.length;if(n<=0)return s;const l=Math.floor(n/2);return c.repeat(l)+s+c.repeat(n-l)},ljust:(s,w,c=' ')=>s.padEnd(Number(w),c),rjust:(s,w,c=' ')=>s.padStart(Number(w),c),zfill:(s,w)=>s.padStart(Number(w),'0'),
+  splitlines:s=>s.split('\n'),format:(s,...a)=>strFormat(s,a)},
+ list:{append:(l,x)=>{l.push(x);return null},pop:(l,i)=>{if(!l.length)throw E('IndexError','pop from empty list');return i===undefined?l.pop():l.splice(ix(i,l.length,'list'),1)[0]},
+  insert:(l,i,x)=>{let k=Number(i);if(k<0)k=Math.max(0,l.length+k);l.splice(Math.min(k,l.length),0,x);return null},
+  remove:(l,x)=>{const i=l.findIndex(y=>$eq(x,y));if(i<0)throw E('ValueError','list.remove(x): x not in list');l.splice(i,1);return null},
+  index:(l,x)=>{const i=l.findIndex(y=>$eq(x,y));if(i<0)throw E('ValueError','object not in sequence');return BigInt(i)},count:(l,x)=>BigInt(l.filter(y=>$eq(x,y)).length),
+  extend:(l,o)=>{l.push(...$iter(o));return null},copy:l=>[...l],clear:l=>{l.length=0;return null},reverse:l=>{l.reverse();return null},
+  sort:async(l,...a)=>{const[,kw]=kwOf(a),r=await sortBy(l,kw.key,$b(kw.reverse));r.forEach((x,i)=>l[i]=x);return null}},
+ tuple:{index:(l,x)=>METH.list.index(l,x),count:(l,x)=>METH.list.count(l,x)},
+ dict:{keys:d=>d.keys(),values:d=>d.vals(),items:d=>d.items(),get:(d,k,df=null)=>d.has(k)?d.get(k):df,pop:(d,k,df)=>{if(d.has(k)){const v=d.get(k);d.del(k);return v}if(df===undefined)throw E('KeyError',$repr(k));return df},
+  update:(d,o)=>{if(o instanceof PyDict)o.keys().forEach(k=>d.set(k,o.get(k)));else for(const p of $iter(o)){const[k,v]=$unp(p,2);d.set(k,v)}return null},setdefault:(d,k,v=null)=>{if(!d.has(k))d.set(k,v);return d.get(k)},copy:d=>{const n=new PyDict;d.keys().forEach(k=>n.set(k,d.get(k)));return n},clear:d=>{d.m.clear();return null}},
+ set:{add:(s,x)=>{s.add(x);return null},remove:(s,x)=>{if(!s.has(x))throw E('KeyError',$repr(x));s.m.delete(PyDict.nk(x));return null},discard:(s,x)=>{s.m.delete(PyDict.nk(x));return null},
+  union:(s,o)=>new PySet([...s.vals(),...$iter(o)]),intersection:(s,o)=>{const t=new PySet($iter(o));return new PySet(s.vals().filter(x=>t.has(x)))},difference:(s,o)=>{const t=new PySet($iter(o));return new PySet(s.vals().filter(x=>!t.has(x)))},copy:s=>new PySet(s.vals()),clear:s=>{s.m.clear();return null}}};
+METH.range={};
+/* ---- builtins ---- */
+const B=Object.create(null);
+const asInt=(x,w)=>{x=num(x);if(!isInt(x))throw E('TypeError',"'"+$tn(x)+"' object cannot be interpreted as an integer");return x};
+Object.assign(B,{
+ print:(...a)=>{const[args,kw]=kwOf(a),fin=ss=>RT.out(ss.join(kw.sep==null?' ':kw.sep)+(kw.end==null?'\n':kw.end));if(args.some(hasDun))return(async()=>{const ss=[];for(const x of args)ss.push(await strA(x));fin(ss)})();fin(args.map($str))},
+ input:(p)=>{const q=p===undefined?'':$str(p),s=prompt(q);RT.out(q+(s===null?'':s)+'\n');return s===null?'':s},
+ len:x=>{if(typeof x==='string'||Array.isArray(x))return BigInt(x.length);if(x instanceof PyDict||x instanceof PySet)return BigInt(x.size);if(x instanceof PyRange)return BigInt(x.n);if(x instanceof Inst){const f=lookup(x.cls,'__len__');if(f)return $c(f,[x])}throw E('TypeError',"object of type '"+$tn(x)+"' has no len()")},
+ range:(a,b,c)=>b===undefined?new PyRange(0n,asInt(a),1n):new PyRange(asInt(a),asInt(b),c===undefined?1n:asInt(c)),
+ int:(x,base)=>{if(x===undefined)return 0n;if(typeof x==='string'){const bs=base===undefined?10:Number(base),t=x.trim().toLowerCase().replace(/_/g,'');const ok=bs===10?/^[+-]?\d+$/.test(t):bs===16?/^[+-]?(0x)?[0-9a-f]+$/.test(t):bs===2?/^[+-]?(0b)?[01]+$/.test(t):/^[+-]?[0-9a-z]+$/.test(t);if(!ok)throw E('ValueError','invalid syntax for integer with base '+bs);if(bs===10)return BigInt(t);const neg=t[0]==='-',d=t.replace(/^[+-]/,'').replace(/^0[xb]/,'');let r=0n;for(const ch of d){const v=parseInt(ch,36);if(v>=bs)throw E('ValueError','invalid syntax for integer with base '+bs);r=r*BigInt(bs)+BigInt(v)}return neg?-r:r}
+  if(typeof x==='number'){if(Number.isNaN(x))throw E('ValueError','cannot convert float NaN to integer');if(!isFinite(x))throw E('OverflowError','cannot convert float infinity to integer');return BigInt(Math.trunc(x))}
+  x=num(x);if(isInt(x))return x;throw E('TypeError',"can't convert "+$tn(x)+" to int")},
+ float:x=>{if(x===undefined)return 0;if(typeof x==='string'){const t=x.trim().toLowerCase();if(/^[+-]?(inf|infinity)$/.test(t))return t[0]==='-'?-Infinity:Infinity;if(t==='nan')return NaN;if(!/^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/.test(t))throw E('ValueError','invalid syntax for number');return parseFloat(t)}x=num(x);if(isInt(x)||typeof x==='number')return toF(x);throw E('TypeError',"can't convert "+$tn(x)+" to float")},
+ str:x=>x===undefined?'':hasDun(x)?strA(x):$str(x),bool:x=>$b(x),repr:x=>hasDun(x)&&lookup(x.cls,'__repr__')?$ca(lookup(x.cls,'__repr__'),[x]):$repr(x),
+ list:x=>x===undefined?[]:[...$iter(x)],tuple:x=>tup(x===undefined?[]:[...$iter(x)]),set:x=>new PySet(x===undefined?[]:[...$iter(x)]),
+ dict:(...a)=>{const[args,kw]=kwOf(a),d=new PyDict;if(args.length){const o=args[0];if(o instanceof PyDict)o.keys().forEach(k=>d.set(k,o.get(k)));else for(const p of $iter(o)){const[k,v]=$unp(p,2);d.set(k,v)}}for(const k in kw)d.set(k,kw[k]);return d},
+ abs:x=>{x=num(x);if(isInt(x))return x<0n?-x:x;if(typeof x==='number')return Math.abs(x);throw E('TypeError',"bad operand type for abs(): '"+$tn(x)+"'")},
+ min:async(...a)=>mm(a,-1),max:async(...a)=>mm(a,1),
+ sum:(l,...r)=>{const[,kw]=kwOf(r);let s=r.length&&!(r[0] instanceof KW)?r[0]:kw.start!==undefined?kw.start:0n;for(const x of $iter(l))s=$add(s,x);return s},
+ round:(x,n)=>{x=num(x);if(n===undefined||n===null){if(isInt(x))return x;if(typeof x!=='number')throw E('TypeError',"type "+$tn(x)+" doesn't define __round__ method");const v=x,r=Math.round(v);return BigInt(Math.abs(v%1)===.5&&r%2!==0?r-1:r)}
+  if(isInt(x))return x;const k=10**Number(n),v=x*k;let r=Math.round(v);if(Math.abs(v-Math.trunc(v))===.5&&r%2!==0)r--;return r/k},
+ sorted:async(l,...a)=>{const[,kw]=kwOf(a);return sortBy([...$iter(l)],kw.key,$b(kw.reverse))},reversed:l=>[...$iter(l)].reverse(),
+ enumerate:(l,...a)=>{const[r,kw]=kwOf(a);let s=r.length?Number(r[0]):kw.start!==undefined?Number(kw.start):0;return[...$iter(l)].map((x,i)=>tup([BigInt(i+s),x]))},
+ zip:(...ls)=>{const a=ls.map(l=>[...$iter(l)]),n=Math.min(...a.map(x=>x.length));return Array.from({length:ls.length?n:0},(_,i)=>tup(a.map(x=>x[i])))},
+ map:async(f,...ls)=>{const a=ls.map(l=>[...$iter(l)]),n=Math.min(...a.map(x=>x.length)),r=[];for(let i=0;i<n;i++)r.push(await $ca(f,a.map(x=>x[i])));return r},
+ filter:async(f,l)=>{const r=[];for(const x of $iter(l))if($b(f===null?x:await $ca(f,[x])))r.push(x);return r},
+ any:l=>{for(const x of $iter(l))if($b(x))return true;return false},all:l=>{for(const x of $iter(l))if(!$b(x))return false;return true},
+ chr:x=>String.fromCharCode(Number(asInt(x))),ord:s=>{if(typeof s!=='string'||s.length!==1)throw E('TypeError','ord() expected a character');return BigInt(s.charCodeAt(0))},
+ divmod:(a,b)=>tup([$fdiv(a,b),$mod(a,b)]),pow:(a,b,m)=>m===undefined?$pow(a,b):(()=>{let r=1n,x=BigInt(a)%BigInt(m),e=BigInt(b);const M=BigInt(m);while(e>0n){if(e&1n)r=r*x%M;x=x*x%M;e>>=1n}return r})(),
+ hex:x=>(x<0n?'-0x'+(-x).toString(16):'0x'+x.toString(16)),bin:x=>(x<0n?'-0b'+(-x).toString(2):'0b'+x.toString(2)),oct:x=>(x<0n?'-0o'+(-x).toString(8):'0o'+x.toString(8)),
+ isinstance:(x,t)=>{if(Array.isArray(t))return t.some(y=>B.isinstance(x,y));if(typeof t==='function'&&t.$tn){const n=$tn(x);return n===t.$tn||(t.$tn==='int'&&n==='bool')}if(t instanceof ClsObj)return x instanceof Inst&&isSub(x.cls,t);if(t&&t.$exc)return x instanceof PyErr&&isSub(x.cls,t);return false},
+ type:x=>x instanceof Inst?x.cls:B[$tn(x)]||null,callable:x=>typeof x==='function'||x instanceof BM||x instanceof ClsObj,
+ hasattr:(o,n)=>{try{$attr(o,n);return true}catch(e){return false}},getattr:(o,n,d)=>{try{return $attr(o,n)}catch(e){if(d!==undefined)return d;throw e}},setattr:(o,n,v)=>{$sattr(o,n,v);return null},
+ exit:()=>{throw new PyErr(EXC.SystemExit,'')},id:x=>BigInt(PyDict.id.get(x)||0)});
+['int','float','str','bool','list','tuple','dict','set','range'].forEach(n=>{B[n].$tn=n});
+async function mm(a,sg){const[r,kw]=kwOf(a);let it=r.length===1?[...$iter(r[0])]:r;if(!it.length){if(kw.default!==undefined)return kw.default;throw E('ValueError',(sg>0?'max':'min')+'() arg is an empty sequence')}
+  let best=it[0],bk=kw.key?await $ca(kw.key,[best]):best;for(let i=1;i<it.length;i++){const k=kw.key?await $ca(kw.key,[it[i]]):it[i];if(sg>0?$gt(k,bk):$lt(k,bk)){best=it[i];bk=k}}return best}
+for(const n in EXC)B[n]=EXC[n];
+/* ---- modules ---- */
+const dom=()=>E('ValueError','math domain error');
+const f1=(fn,chk)=>x=>{x=num(x);if(!isInt(x)&&typeof x!=='number')throw E('TypeError',"can't convert "+$tn(x)+" to float");const v=toF(x);if(chk&&!chk(v))throw dom();return fn(v)};
+const MODS={
+ math:{$mod:'math',pi:Math.PI,e:Math.E,tau:2*Math.PI,inf:Infinity,nan:NaN,sqrt:f1(Math.sqrt,v=>v>=0),sin:f1(Math.sin),cos:f1(Math.cos),tan:f1(Math.tan),asin:f1(Math.asin,v=>Math.abs(v)<=1),acos:f1(Math.acos,v=>Math.abs(v)<=1),atan:f1(Math.atan),
+  sinh:f1(Math.sinh),cosh:f1(Math.cosh),tanh:f1(Math.tanh),exp:f1(Math.exp),fabs:f1(Math.abs),degrees:f1(v=>v*180/Math.PI),radians:f1(v=>v*Math.PI/180),
+  log:(x,b)=>{const v=toF(num(x));if(v<=0)throw dom();return b===undefined?Math.log(v):Math.log(v)/Math.log(toF(num(b)))},log10:f1(Math.log10,v=>v>0),log2:f1(Math.log2,v=>v>0),
+  floor:x=>{x=num(x);return isInt(x)?x:BigInt(Math.floor(x))},ceil:x=>{x=num(x);return isInt(x)?x:BigInt(Math.ceil(x))},trunc:x=>{x=num(x);return isInt(x)?x:BigInt(Math.trunc(x))},
+  atan2:(y,x)=>Math.atan2(toF(num(y)),toF(num(x))),pow:(a,b)=>Math.pow(toF(num(a)),toF(num(b))),hypot:(a,b)=>Math.hypot(toF(num(a)),toF(num(b))),copysign:(a,b)=>Math.sign(toF(num(b)))*Math.abs(toF(num(a))),
+  factorial:n=>{n=asInt(n);if(n<0n)throw E('ValueError','negative factorial');let r=1n;for(let i=2n;i<=n;i++)r*=i;return r},gcd:(a,b)=>{a=asInt(a);b=asInt(b);if(a<0n)a=-a;if(b<0n)b=-b;while(b){[a,b]=[b,a%b]}return a},
+  isnan:x=>Number.isNaN(toF(num(x))),isinf:x=>{const v=toF(num(x));return v===Infinity||v===-Infinity},isfinite:x=>Number.isFinite(toF(num(x)))},
+ random:{$mod:'random',random:()=>Math.random(),randint:(a,b)=>{a=asInt(a);b=asInt(b);return a+BigInt(Math.floor(Math.random()*(Number(b-a)+1)))},uniform:(a,b)=>{a=toF(num(a));b=toF(num(b));return a+Math.random()*(b-a)},
+  randrange:(a,b,c)=>{if(b===undefined){b=asInt(a);a=0n}else{a=asInt(a);b=asInt(b)}c=c===undefined?1n:asInt(c);const n=Number((b-a+c-(c>0n?1n:-1n))/c);if(n<=0)throw E('ValueError','empty range for randrange()');return a+BigInt(Math.floor(Math.random()*n))*c},
+  choice:l=>{l=[...$iter(l)];if(!l.length)throw E('IndexError','empty sequence');return l[Math.floor(Math.random()*l.length)]},shuffle:l=>{for(let i=l.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[l[i],l[j]]=[l[j],l[i]]}return null},seed:()=>null},
+ time:{$mod:'time',sleep:async s=>{pyBlit();await new Promise(r=>setTimeout(r,toF(num(s))*1000));pyChk();pyRefresh();return null},monotonic:()=>performance.now()/1000,time:()=>Date.now()/1000,ticks_ms:()=>BigInt(Math.floor(performance.now())),ticks_ms_:null},
+ ion:null,kandinsky:null};
+const pyKd=()=>{const cv=RT.cv,cx=cv.getContext('2d'),N=x=>Number(num(x)),
+  col=c=>Array.isArray(c)?'rgb('+c.slice(0,3).map(v=>Math.max(0,Math.min(255,Math.round(toF(num(v)))))).join(',')+')':String(c);
+  return{$mod:'kandinsky',color:(r,g,b)=>tup([r,g,b]),fill_rect:(x,y,w,h,c)=>{cx.fillStyle=col(c);cx.fillRect(N(x),N(y),N(w),N(h));return null},set_pixel:(x,y,c)=>{cx.fillStyle=col(c);cx.fillRect(N(x),N(y),1,1);return null},
+   get_pixel:(x,y)=>tup([...cx.getImageData(N(x),N(y),1,1).data.slice(0,3)].map(v=>BigInt(v))),
+   draw_string:(t,x,y,fg='black',bg='white')=>{cx.font='14px "Courier New",monospace';cx.textBaseline='top';t=$str(t);cx.fillStyle=col(bg);cx.fillRect(N(x),N(y),cx.measureText(t).width,16);cx.fillStyle=col(fg);cx.fillText(t,N(x),N(y));return null}}};
+const $imp=n=>{const m=n==='ion'?Object.assign({$mod:'ion'},ION):n==='kandinsky'?pyKd():MODS[n];if(!m)throw E('ImportError','no module named \''+n+'\'');return m};
+const $impn=(m,n)=>{const o=$imp(m);if(!(n in o))throw E('ImportError','cannot import name '+n);return o[n]};
+const $impall=m=>{const o=$imp(m);for(const k in o)if(k!=='$mod')RT.G[k]=o[k]};
+const $dict=p=>{const d=new PyDict;p.forEach(([k,v])=>d.set(k,v));return d};
+const $mkd=o=>{const d=Object.create(null);for(const k in o)if(o[k]!==undefined)d[k]=o[k];return d};
+const $iadd=(a,b)=>{if(Array.isArray(a)&&!a.t&&b!==undefined){a.push(...$iter(b));return a}return $add(a,b)};
+const $pos=a=>{a=num(a);if(isInt(a)||typeof a==='number')return a;throw E('TypeError',"unsupported type for __pos__: '"+$tn(a)+"'")};
+const $show=v=>{if(v!==null&&v!==undefined)RT.out($repr(v)+'\n')};
+const $y=async()=>{await yieldUI();pyChk();pyRefresh()};
+const $is=(a,b)=>a===b||(typeof a==='bigint'&&typeof b==='bigint'&&a===b);
+const RT={G:Object.create(null),out:()=>{},cv:null};
+
+/* ---- analyse lexicale ---- */
+function pyLex(src){
+  const T=[],n=src.length;let i=0,ln=1,ind=[0],depth=0,bol=true;
+  const push=(t,v,x)=>T.push({t,v,ln,x});
+  const OPS=['**=','//=','>>=','<<=','**','//','==','!=','<=','>=','+=','-=','*=','/=','%=','&=','|=','^=','<<','>>','->','+','-','*','/','%','<','>','=','(',')','[',']','{','}',',',':','.',';','&','|','^','~','@'];
+  const strRe=/([rRbBfFuU]{0,2})('''|"""|'|")/y,numRe=/0[xX][\da-fA-F_]+|0[bB][01_]+|0[oO][0-7_]+|(?:\d[\d_]*\.?[\d_]*|\.\d[\d_]*)(?:[eE][+-]?\d+)?/y,nameRe=/[A-Za-z_\u00C0-\uFFFF][\w\u00C0-\uFFFF]*/y;
+  while(i<n){
+    if(bol&&depth===0){
+      let c=0,j=i;while(j<n&&(src[j]===' '||src[j]==='\t')){c+=src[j]==='\t'?8:1;j++}
+      if(j>=n)break;
+      if(src[j]==='\n'||src[j]==='#'||src[j]==='\r'){while(j<n&&src[j]!=='\n')j++;i=j+1;ln++;continue}
+      if(c>ind[ind.length-1]){ind.push(c);push('ind')}
+      else{while(c<ind[ind.length-1]){ind.pop();push('ded')}if(c!==ind[ind.length-1])throw synErr('unindent doesn\'t match any outer indentation level',ln)}
+      i=j;bol=false;continue}
+    const ch=src[i];
+    if(ch==='\n'){if(depth===0){push('nl');bol=true}ln++;i++;continue}
+    if(ch===' '||ch==='\t'||ch==='\r'){i++;continue}
+    if(ch==='#'){while(i<n&&src[i]!=='\n')i++;continue}
+    if(ch==='\\'&&src[i+1]==='\n'){i+=2;ln++;continue}
+    strRe.lastIndex=i;let m=strRe.exec(src);
+    if(m){const pre=m[1].toLowerCase(),q=m[2],raw=pre.includes('r');let j=i+m[0].length,s='';const start=ln;
+      for(;;){if(j>=n)throw synErr('unterminated string',start);
+        if(src.startsWith(q,j)){j+=q.length;break}
+        const c=src[j];
+        if(c==='\\'&&!raw){const d=src[j+1];j+=2;
+          if(pre.includes('f')){s+='\\'+d;if(d==='\n')ln++;continue}
+          if(d==='n')s+='\n';else if(d==='t')s+='\t';else if(d==='r')s+='\r';else if(d==='0')s+='\0';else if(d==='\n'){ln++}
+          else if(d==='x'){s+=String.fromCharCode(parseInt(src.substr(j,2),16));j+=2}else if(d==='u'){s+=String.fromCharCode(parseInt(src.substr(j,4),16));j+=4}
+          else if(d==='\\'||d==="'"||d==='"')s+=d;else s+='\\'+d;continue}
+        if(c==='\n'){if(q.length===1)throw synErr('unterminated string',start);ln++}
+        s+=c;j++}
+      push(pre.includes('f')?'fstr':'str',s);i=j;continue}
+    numRe.lastIndex=i;m=numRe.exec(src);
+    if(m&&m.index===i&&(ch>='0'&&ch<='9'||ch==='.')){const v=m[0].replace(/_/g,'');const f=!/^0[xXbBoO]/.test(v)&&/[.eE]/.test(v);push('num',f?parseFloat(v):BigInt(v),f);i+=m[0].length;continue}
+    nameRe.lastIndex=i;m=nameRe.exec(src);
+    if(m&&m.index===i){push('name',m[0]);i+=m[0].length;continue}
+    const o=OPS.find(o=>src.startsWith(o,i));
+    if(!o)throw synErr('invalid syntax',ln);
+    if('([{'.includes(o))depth++;else if(')]}'.includes(o))depth=Math.max(0,depth-1);
+    push('op',o);i+=o.length}
+  if(T.length&&T[T.length-1].t!=='nl')push('nl');
+  while(ind.length>1){ind.pop();push('ded')}
+  push('end');return T}
+/* ---- analyse syntaxique ---- */
+const RESERVED=new Set('if elif else while for in not and or is def class return pass break continue import from as try except finally raise global nonlocal del assert lambda with yield None True False'.split(' '));
+function pyParse(T,repl,mode){
+  let p=0;
+  const op=v=>T[p].t==='op'&&T[p].v===v,kw=v=>T[p].t==='name'&&T[p].v===v;
+  const err=m=>{throw synErr(m||'invalid syntax',T[p].ln)};
+  const eat=v=>{if(op(v)){p++;return true}return false},eatK=v=>{if(kw(v)){p++;return true}return false};
+  const need=v=>{if(!eat(v))err()},needK=v=>{if(!eatK(v))err()};
+  const name=()=>{const t=T[p];if(t.t!=='name'||RESERVED.has(t.v))err();p++;return t.v};
+  const endStmt=()=>T[p].t==='nl'||T[p].t==='end'||op(';')||op(')');
+  const AUG=['+=','-=','*=','/=','//=','%=','**=','&=','|=','^=','<<=','>>='];
+  function block(){
+    if(T[p].t==='nl'){p++;if(T[p].t!=='ind')err('expected an indented block');p++;const b=[];while(T[p].t!=='ded'&&T[p].t!=='end')b.push(stmt());if(T[p].t==='ded')p++;return b}
+    return[simpleLine()]}
+  function simpleLine(){const ln=T[p].ln,b=[small()];while(eat(';')){if(T[p].t==='nl'||T[p].t==='end')break;b.push(small())}if(T[p].t==='nl')p++;else if(T[p].t!=='end')err();return b.length===1?b[0]:{k:'seq',b,ln}}
+  function params(){const pr=[];let va=null,kk=null;
+    while(!op(')')){if(eat('**'))kk=name();else if(eat('*'))va=name();else{const n=name();let d=null;if(eat('='))d=test();pr.push({n,d})}if(!eat(','))break}return{pr,va,kw:kk}}
+  function stmt(){
+    const t=T[p],ln=t.ln;
+    if(t.t==='name')switch(t.v){
+      case'if':{p++;const c=test();need(':');const b=block(),n={k:'if',ln,c,b,e:null};let cur=n;
+        while(kw('elif')){const l2=T[p].ln;p++;const c2=test();need(':');const x={k:'if',ln:l2,c:c2,b:block(),e:null};cur.e=[x];cur=x}
+        if(eatK('else')){need(':');cur.e=block()}return n}
+      case'while':{p++;const c=test();need(':');const b=block();let e=null;if(eatK('else')){need(':');e=block()}return{k:'while',ln,c,b,e}}
+      case'for':{p++;const tg=targets();needK('in');const it=tests();need(':');const b=block();let e=null;if(eatK('else')){need(':');e=block()}return{k:'for',ln,tg,it,b,e}}
+      case'def':{p++;const nm=name();need('(');const pa=params();need(')');need(':');return{k:'def',ln,name:nm,pa,b:block()}}
+      case'class':{p++;const nm=name();let base=null;if(eat('(')){if(!op(')'))base=test();need(')')}need(':');return{k:'class',ln,name:nm,base,b:block()}}
+      case'try':{p++;need(':');const b=block(),hs=[];let el=null,fin=null;
+        while(kw('except')){p++;let ty=null,nm=null;if(!op(':')){ty=test();if(eatK('as'))nm=name()}need(':');hs.push({ty,nm,b:block()})}
+        if(eatK('else')){need(':');el=block()}if(eatK('finally')){need(':');fin=block()}if(!hs.length&&!fin)err();return{k:'try',ln,b,hs,el,fin}}
+      case'with':case'yield':err(t.v+' n\'est pas pris en charge')}
+    if(t.t==='ind')err('unexpected indent');
+    return simpleLine()}
+  function small(){
+    const t=T[p],ln=t.ln;
+    if(t.t==='name')switch(t.v){
+      case'pass':p++;return{k:'pass',ln};case'break':case'continue':p++;return{k:t.v,ln};
+      case'return':{p++;return{k:'return',ln,v:endStmt()?null:tests()}}
+      case'global':case'nonlocal':{p++;const ns=[name()];while(eat(','))ns.push(name());return{k:t.v,ln,ns}}
+      case'del':{p++;const ts=[postfix()];while(eat(','))ts.push(postfix());return{k:'del',ln,ts}}
+      case'assert':{p++;const c=test();let m=null;if(eat(','))m=test();return{k:'assert',ln,c,m}}
+      case'raise':{p++;return{k:'raise',ln,v:endStmt()?null:test()}}
+      case'import':{p++;const l=[];do{const n=name();let as=null;if(eatK('as'))as=name();l.push([n,as])}while(eat(','));return{k:'import',ln,l}}
+      case'from':{p++;const m=name();needK('import');if(eat('*'))return{k:'from',ln,m,star:true};const par=eat('('),l=[];do{const n=name();let as=null;if(eatK('as'))as=name();l.push([n,as])}while(eat(',')&&!op(')'));if(par)need(')');return{k:'from',ln,m,l}}}
+    const e=tests();
+    if(op('=')){const tg=[e];p++;let v=tests();while(op('=')){p++;tg.push(v);v=tests()}return{k:'assign',ln,tg,v}}
+    if(T[p].t==='op'&&AUG.includes(T[p].v)){const o=T[p++].v.slice(0,-1);return{k:'aug',ln,op:o,tg:e,v:tests()}}
+    return{k:'expr',ln,e}}
+  const endExpr=()=>T[p].t==='nl'||T[p].t==='end'||op('=')||op(')')||op(']')||op('}')||op(':')||op(';')||(T[p].t==='op'&&AUG.includes(T[p].v));
+  function tests(){const f=test();if(!op(','))return f;const it=[f];while(eat(',')){if(endExpr())break;it.push(test())}return{k:'tuple',it}}
+  function targets(){const f=postfix();if(!op(','))return f;const it=[f];while(eat(',')){if(kw('in'))break;it.push(postfix())}return{k:'tuple',it}}
+  function test(){
+    if(kw('lambda')){p++;const pa=params();need(':');return{k:'lambda',pa,b:test()}}
+    const a=orT();if(kw('if')){p++;const c=orT();needK('else');return{k:'tern',c,a,b:test()}}return a}
+  const orT=()=>{let a=andT();while(eatK('or'))a={k:'bool',op:'or',a,b:andT()};return a};
+  const andT=()=>{let a=notT();while(eatK('and'))a={k:'bool',op:'and',a,b:notT()};return a};
+  const notT=()=>eatK('not')?{k:'not',a:notT()}:cmpT();
+  function cmpT(){const first=bin(0),ops=[],rest=[];
+    for(;;){let o=null;
+      if(T[p].t==='op'&&['<','>','==','>=','<=','!='].includes(T[p].v))o=T[p++].v;
+      else if(kw('in')){p++;o='in'}
+      else if(kw('not')&&T[p+1].t==='name'&&T[p+1].v==='in'){p+=2;o='not in'}
+      else if(kw('is')){p++;o=eatK('not')?'is not':'is'}
+      if(!o)break;ops.push(o);rest.push(bin(0))}
+    return ops.length?{k:'cmp',first,ops,rest}:first}
+  const LV=[['|'],['^'],['&'],['<<','>>'],['+','-'],['*','/','//','%']];
+  function bin(i){if(i===LV.length)return unary();let a=bin(i+1);while(T[p].t==='op'&&LV[i].includes(T[p].v)){const o=T[p++].v;a={k:'bin',op:o,a,b:bin(i+1)}}return a}
+  function unary(){if(op('-')||op('+')||op('~')){const o=T[p++].v;return{k:'un',op:o,a:unary()}}return power()}
+  function power(){const a=postfix();if(eat('**'))return{k:'bin',op:'**',a,b:unary()};return a}
+  function comp(elt,kind){const fs=[];while(eatK('for')){const tg=targets();needK('in');const it=orT();const cs=[];while(eatK('if'))cs.push(orT());fs.push({tg,it,cs})}return{k:'comp',kind,elt,fs}}
+  function postfix(){
+    let a=atom();
+    for(;;){
+      if(op('(')){p++;const args=[],kws=[];let gen=false;
+        while(!op(')')){
+          if(eat('*'))args.push({star:true,e:test()});
+          else if(T[p].t==='name'&&T[p+1].t==='op'&&T[p+1].v==='='&&!RESERVED.has(T[p].v)){const k=name();p++;kws.push([k,test()])}
+          else{const e=test();if(kw('for'))args.push({e:comp(e,'list')});else args.push({e})}
+          if(!eat(','))break}
+        need(')');a={k:'call',f:a,args,kws}}
+      else if(op('[')){p++;
+        const sl=()=>{let x=null,y=null,z=null,isS=false;if(!op(':')&&!op(']')&&!op(','))x=test();if(eat(':')){isS=true;if(!op(':')&&!op(']')&&!op(','))y=test();if(eat(':')){if(!op(']')&&!op(','))z=test()}}return isS?{k:'slice',a:x,b:y,c:z}:x};
+        let i=sl();if(op(',')){const it=[i];while(eat(',')){if(op(']'))break;it.push(sl())}i={k:'tuple',it}}
+        need(']');a={k:'idx',o:a,i}}
+      else if(op('.')){p++;const t=T[p];if(t.t!=='name')err();p++;a={k:'attr',o:a,n:t.v}}
+      else break}
+    return a}
+  function fstr(raw,ln){
+    const parts=[];let lit='';
+    const unesc=s=>s.replace(/\\(.)/g,(m,c)=>c==='n'?'\n':c==='t'?'\t':c==='\\'?'\\':c==="'"||c==='"'?c:m);
+    for(let i=0;i<raw.length;i++){const c=raw[i];
+      if(c==='{'&&raw[i+1]==='{'){lit+='{';i++}else if(c==='}'&&raw[i+1]==='}'){lit+='}';i++}
+      else if(c==='{'){let d=1,j=i+1,q=null;while(j<raw.length&&d>0){const x=raw[j];if(q){if(x===q)q=null}else if(x==='"'||x==="'")q=x;else if(x==='{'||x==='['||x==='(')d++;else if(x==='}'||x===']'||x===')')d--;j++}
+        if(d)throw synErr('f-string: expecting \'}\'',ln);
+        let body=raw.slice(i+1,j-1),spec=null,cv=null,dd=0,q2=null,cut=-1;
+        for(let k=0;k<body.length;k++){const x=body[k];if(q2){if(x===q2)q2=null;continue}if(x==='"'||x==="'"){q2=x;continue}if('([{'.includes(x))dd++;else if(')]}'.includes(x))dd--;else if(dd===0&&x===':'){cut=k;break}else if(dd===0&&x==='!'&&body[k+1]!=='='&&/^[rs]/.test(body.slice(k+1))&&(k+2>=body.length||body[k+2]===':')){cv=body[k+1];body=body.slice(0,k)+body.slice(k+2);k--;}}
+        if(cut>=0){spec=body.slice(cut+1);body=body.slice(0,cut)}
+        if(lit){parts.push(unesc(lit));lit=''}
+        const sub=pyParse(pyLex('('+body+')'),false,'expr');parts.push({e:sub,spec,cv});i=j-1}
+      else lit+=c}
+    if(lit)parts.push(unesc(lit));return{k:'fstr',parts}}
+  function atom(){
+    const t=T[p];
+    if(t.t==='num'){p++;return{k:'num',v:t.v,f:t.x}}
+    if(t.t==='str'||t.t==='fstr'){let parts=[];while(T[p].t==='str'||T[p].t==='fstr'){const s=T[p++];parts.push(s.t==='str'?{k:'str',v:s.v}:fstr(s.v,s.ln))}
+      if(parts.length===1)return parts[0];return{k:'fstr',parts:parts.flatMap(x=>x.k==='str'?[x.v]:x.parts)}}
+    if(t.t==='name'){
+      if(t.v==='None'||t.v==='True'||t.v==='False'){p++;return{k:'const',v:t.v}}
+      if(RESERVED.has(t.v))err();p++;return{k:'name',v:t.v}}
+    if(op('(')){p++;if(eat(')'))return{k:'tuple',it:[]};const f=test();
+      if(kw('for')){const c=comp(f,'list');need(')');return c}
+      if(op(',')){const it=[f];while(eat(',')){if(op(')'))break;it.push(test())}need(')');return{k:'tuple',it}}
+      need(')');return{k:'paren',e:f}}
+    if(op('[')){p++;if(eat(']'))return{k:'list',it:[]};const f=test();
+      if(kw('for')){const c=comp(f,'list');need(']');return c}
+      const it=[f];while(eat(',')){if(op(']'))break;it.push(test())}need(']');return{k:'list',it}}
+    if(op('{')){p++;if(eat('}'))return{k:'dict',it:[]};const f=test();
+      if(eat(':')){const v=test();if(kw('for')){const c=comp(f,'dict');c.val=v;need('}');return c}
+        const it=[[f,v]];while(eat(',')){if(op('}'))break;const k=test();need(':');it.push([k,test()])}need('}');return{k:'dict',it}}
+      if(kw('for')){const c=comp(f,'set');need('}');return c}
+      const it=[f];while(eat(',')){if(op('}'))break;it.push(test())}need('}');return{k:'set',it}}
+    err()}
+  if(mode==='expr')return tests();
+  const prog=[];while(T[p].t!=='end'){if(T[p].t==='nl'){p++;continue}prog.push(stmt())}
+  return prog}
+
+/* ---- génération du code JavaScript ---- */
+function pyGen(prog,repl){
+  const J=JSON.stringify;let tc=0,lc=0;
+  const sc=[{k:'module',loc:new Set,glob:new Set,tmp:[]}],fns=[];let loops=[];
+  const cur=()=>sc[sc.length-1];
+  const tmp=()=>{const n='$t'+(++tc);cur().tmp.push(n);return n};
+  const look=n=>{for(let i=sc.length-1;i>=0;i--){const s=sc[i];if(s.k==='module')return null;if(s.k==='class'&&i!==sc.length-1)continue;if(s.glob.has(n))return null;if(s.loc.has(n))return'v_'+n}return null};
+  const rd=n=>look(n)||'$g('+J(n)+')';
+  const wr=(n,v)=>{const l=look(n);return l?l+'='+v:'RT.G['+J(n)+']='+v};
+  function collect(body,loc,glob,nl){
+    const walk=(b,f)=>b&&b.forEach(f);
+    const pass1=b=>walk(b,n=>{if(n.k==='global')n.ns.forEach(x=>glob.add(x));else if(n.k==='nonlocal')n.ns.forEach(x=>nl.add(x));
+      else if(n.k==='seq')pass1(n.b);else{pass1(n.b);pass1(n.e);pass1(n.fin);pass1(n.el);(n.hs||[]).forEach(h=>pass1(h.b))}});
+    const tg=t=>{if(!t)return;if(t.k==='name'){if(!glob.has(t.v)&&!nl.has(t.v))loc.add(t.v)}else if(t.k==='tuple'||t.k==='list')t.it.forEach(tg);else if(t.k==='paren')tg(t.e)};
+    const pass2=b=>walk(b,n=>{
+      if(n.k==='assign')n.tg.forEach(tg);else if(n.k==='aug')tg(n.tg);else if(n.k==='for')tg(n.tg);
+      else if(n.k==='def'||n.k==='class'){if(!glob.has(n.name)&&!nl.has(n.name))loc.add(n.name);return}
+      else if(n.k==='import')n.l.forEach(([a,as])=>tg({k:'name',v:as||a}));else if(n.k==='from'&&n.l)n.l.forEach(([a,as])=>tg({k:'name',v:as||a}));
+      else if(n.k==='try')(n.hs||[]).forEach(h=>{if(h.nm)tg({k:'name',v:h.nm})});
+      if(n.k==='seq')pass2(n.b);else{pass2(n.b);pass2(n.e);pass2(n.fin);pass2(n.el);(n.hs||[]).forEach(h=>pass2(h.b))}});
+    pass1(body);pass2(body)}
+  const OPF={'+':'$add','-':'$sub','*':'$mul','/':'$div','//':'$fdiv','%':'$mod','**':'$pow'},BIT={'&':'and','|':'or','^':'xor','<<':'lshift','>>':'rshift'};
+  const binop=(o,a,b)=>OPF[o]?OPF[o]+'('+a+','+b+')':'$bit('+J(BIT[o])+','+a+','+b+')';
+  const W=c=>'(($r='+c+') instanceof Promise?await $r:$r)';
+  const call=(f,a,kw)=>'(($r=$c('+f+',['+a+']'+(kw?','+kw:'')+')) instanceof Promise?await $r:$r)';
+  function X(n){
+    switch(n.k){
+      case'num':return n.f?(Number.isFinite(n.v)?String(n.v):'Infinity'):n.v+'n';
+      case'str':return J(n.v);
+      case'fstr':return'('+(n.parts.length?n.parts.map(p=>typeof p==='string'?J(p):'$fv('+X(p.e)+','+(p.spec===null?'null':J(p.spec))+','+(p.cv?J(p.cv):'null')+')').join('+'):'""')+')';
+      case'const':return n.v==='None'?'null':n.v==='True'?'true':'false';
+      case'name':return rd(n.v);
+      case'paren':return X(n.e);
+      case'bin':return W(binop(n.op,X(n.a),X(n.b)));
+      case'un':return(n.op==='-'?'$neg(':n.op==='+'?'$pos(':'$inv(')+X(n.a)+')';
+      case'not':return'!$b('+X(n.a)+')';
+      case'bool':{const t=tmp();return n.op==='and'?'('+t+'='+X(n.a)+',!$b('+t+')?'+t+':'+X(n.b)+')':'('+t+'='+X(n.a)+',$b('+t+')?'+t+':'+X(n.b)+')'}
+      case'tern':return'($b('+X(n.c)+')?'+X(n.a)+':'+X(n.b)+')';
+      case'cmp':{const C={'==':'$eq','<':'$lt','>':'$gt','<=':'$le','>=':'$ge','in':'$in','is':'$is'};
+        const one=(o,a,b)=>o==='!='?'!$eq('+a+','+b+')':o==='not in'?'!$in('+a+','+b+')':o==='is not'?'!$is('+a+','+b+')':C[o]+'('+a+','+b+')';
+        if(n.ops.length===1){const o=n.ops[0],a=X(n.first),b=X(n.rest[0]);if(o==='!=')return'!'+W('$eq('+a+','+b+')');if(o==='not in'||o==='is not'||o==='in'||o==='is')return one(o,a,b);return W(one(o,a,b))}
+        const ts=n.rest.map(()=>tmp());let out=[];let prev=X(n.first);
+        n.ops.forEach((o,i)=>{out.push(one(o,prev,'('+ts[i]+'='+X(n.rest[i])+')'));prev=ts[i]});return'('+out.join('&&')+')'}
+      case'call':{
+        if(n.f.k==='name'&&n.f.v==='super'&&!n.args.length){const fi=fns[fns.length-1];return'$sup('+(fi&&fi.first?rd(fi.first):'null')+','+J(fi&&fi.cls||'')+')'}
+        const a=n.args.map(x=>x.star?'...$iter('+X(x.e)+')':X(x.e)).join(','),kw=n.kws.length?'{'+n.kws.map(([k,v])=>J(k)+':'+X(v)).join(',')+'}':null;
+        return call(X(n.f),a,kw)}
+      case'idx':return n.i&&n.i.k==='slice'?'$slice('+X(n.o)+','+[n.i.a,n.i.b,n.i.c].map(x=>x?X(x):'undefined').join(',')+')':'$idx('+X(n.o)+','+X(n.i)+')';
+      case'attr':return'$attr('+X(n.o)+','+J(n.n)+')';
+      case'list':return'['+n.it.map(X).join(',')+']';
+      case'tuple':return'$tup(['+n.it.map(X).join(',')+'])';
+      case'set':return'new PySet(['+n.it.map(X).join(',')+'])';
+      case'dict':return'$dict(['+n.it.map(([k,v])=>'['+X(k)+','+X(v)+']').join(',')+'])';
+      case'lambda':return funcCode('<lambda>',n.pa,[{k:'return',v:n.b}]);
+      case'comp':{
+        const loc=new Set,glob=new Set;const tg=t=>{if(t.k==='name')loc.add(t.v);else if(t.k==='tuple'||t.k==='list')t.it.forEach(tg)};n.fs.forEach(f=>tg(f.tg));
+        sc.push({k:'comp',loc,glob,tmp:[]});
+        let body=n.kind==='list'?'$o.push('+X(n.elt)+');':n.kind==='set'?'$o.add('+X(n.elt)+');':'$o.set('+X(n.elt)+','+X(n.val)+');';
+        for(let i=n.fs.length-1;i>=0;i--){const f=n.fs[i];let inner=body;
+          if(f.cs.length)inner='if('+f.cs.map(c=>'$b('+X(c)+')').join('&&')+'){'+inner+'}';
+          const u='$u'+(++lc);const asg=f.tg.k==='name'?'v_'+f.tg.v+'='+u+';':genAssign(f.tg,u);
+          body='for(const '+u+' of $iter('+X(f.it)+')){'+asg+inner+'}'}
+        const s=sc.pop(),vars=[...s.loc].map(v=>'v_'+v).concat(s.tmp);
+        return'(await (async()=>{const $o='+(n.kind==='list'?'[]':n.kind==='set'?'new PySet()':'new PyDict()')+';let $r'+(vars.length?','+vars.join(','):'')+';'+body+'return $o})())'}
+    }throw synErr('invalid syntax',0)}
+  function genAssign(t,v){
+    if(t.k==='paren')return genAssign(t.e,v);
+    if(t.k==='name')return wr(t.v,v)+';';
+    if(t.k==='idx'){if(t.i&&t.i.k==='slice')throw synErr('slice assignment non pris en charge',0);return'$sidx('+X(t.o)+','+X(t.i)+','+v+');'}
+    if(t.k==='attr')return'$sattr('+X(t.o)+','+J(t.n)+','+v+');';
+    if(t.k==='tuple'||t.k==='list'){const u='$u'+(++lc);return'{const '+u+'=$unp('+v+','+t.it.length+');'+t.it.map((e,i)=>genAssign(e,u+'['+i+']')).join('')+'}'}
+    throw synErr("can't assign to expression",0)}
+  const tick='if((++$k&2047)===0)await $y();';
+  function body(b){return b.map(S).join('')}
+  function S(n){
+    const L='$F.l='+n.ln+';';
+    switch(n.k){
+      case'seq':return n.b.map(S).join('');
+      case'pass':return'';
+      case'expr':return L+(repl&&sc.length===1?'$show('+X(n.e)+');':X(n.e)+';');
+      case'assign':{if(n.tg.length===1)return L+genAssign(n.tg[0],X(n.v));const u='$a'+(++lc);return L+'{const '+u+'='+X(n.v)+';'+n.tg.map(t=>genAssign(t,u)).join('')+'}'}
+      case'aug':{const f=n.op==='+'?'$iadd':OPF[n.op]||null,mk=(a,b)=>f?f+'('+a+','+b+')':'$bit('+J(BIT[n.op])+','+a+','+b+')';
+        const t=n.tg;if(t.k==='name')return L+wr(t.v,mk(rd(t.v),X(n.v)))+';';
+        if(t.k==='idx'){const o=tmp(),i=tmp();return L+o+'='+X(t.o)+';'+i+'='+X(t.i)+';$sidx('+o+','+i+','+mk('$idx('+o+','+i+')',X(n.v))+');'}
+        if(t.k==='attr'){const o=tmp();return L+o+'='+X(t.o)+';$sattr('+o+','+J(t.n)+','+mk('$attr('+o+','+J(t.n)+')',X(n.v))+');'}
+        throw synErr('invalid syntax',n.ln)}
+      case'if':return L+'if($b('+X(n.c)+')){'+body(n.b)+'}'+(n.e?'else{'+body(n.e)+'}':'');
+      case'while':{const fl=n.e?'$b'+(++lc):null;loops.push(fl);const c=X(n.c),b=body(n.b);loops.pop();
+        return L+(fl?'{let '+fl+'=false;':'')+'while($b('+c+')){'+tick+b+'}'+(fl?'if(!'+fl+'){'+body(n.e)+'}}':'')}
+      case'for':{const fl=n.e?'$b'+(++lc):null,u='$v'+(++lc);const it=X(n.it);loops.push(fl);const b=body(n.b);loops.pop();
+        return L+(fl?'{let '+fl+'=false;':'')+'for(const '+u+' of $iter('+it+')){'+genAssign(n.tg,u)+tick+b+'}'+(fl?'if(!'+fl+'){'+body(n.e)+'}}':'')}
+      case'break':{const fl=loops[loops.length-1];return fl?'{'+fl+'=true;break}':'break;'}
+      case'continue':return'continue;';
+      case'return':return L+'return '+(n.v?X(n.v):'null')+';';
+      case'global':case'nonlocal':return'';
+      case'def':return L+genAssign({k:'name',v:n.name},funcCode(n.name,n.pa,n.b));
+      case'class':{
+        const loc=new Set,glob=new Set,nl=new Set;collect(n.b,loc,glob,nl);
+        const base=n.base?X(n.base):'null';
+        sc.push({k:'class',loc,glob,nl,tmp:[]});fns.push({cls:n.name,first:null,isClass:1});
+        const b=body(n.b),s=sc.pop();fns.pop();
+        const vars=[...loc].map(v=>'v_'+v).concat(s.tmp);
+        return L+genAssign({k:'name',v:n.name},'$cls('+J(n.name)+','+base+',await (async()=>{let $r'+(vars.length?','+vars.join(','):'')+';'+b+'return $mkd({'+[...loc].map(v=>J(v)+':v_'+v).join(',')+'})})())')}
+      case'try':{
+        let out=L+'try{'+body(n.b)+(n.el?body(n.el):'')+'}';
+        if(n.hs.length){out+='catch($e){$e=$wrap($e);';let first=true,bare=false;
+          for(const h of n.hs){const asg=h.nm?genAssign({k:'name',v:h.nm},'$e'):'';
+            if(!h.ty){out+=(first?'':'else ')+'{'+asg+body(h.b)+'}';bare=true;break}
+            out+=(first?'':'else ')+'if($isinst($e,'+X(h.ty)+')){'+asg+body(h.b)+'}';first=false}
+          if(!bare)out+='else{throw $e}';out+='}'}
+        if(n.fin)out+='finally{'+body(n.fin)+'}';return out}
+      case'raise':return L+(n.v?'$raise('+X(n.v)+');':'throw $e;');
+      case'assert':return L+'if(!$b('+X(n.c)+'))throw $E("AssertionError",'+(n.m?'$str('+X(n.m)+')':'""')+');';
+      case'del':return L+n.ts.map(t=>t.k==='idx'?'$del('+X(t.o)+','+X(t.i)+');':t.k==='name'?(look(t.v)?look(t.v)+'=undefined;':'delete RT.G['+J(t.v)+'];'):'').join('');
+      case'import':return L+n.l.map(([a,as])=>genAssign({k:'name',v:as||a},'$imp('+J(a)+')')).join('');
+      case'from':return L+(n.star?'$impall('+J(n.m)+');':n.l.map(([a,as])=>genAssign({k:'name',v:as||a},'$impn('+J(n.m)+','+J(a)+')')).join(''));
+    }throw synErr('invalid syntax',n.ln)}
+  function funcCode(name,pa,b){
+    const defs='['+pa.pr.map(p=>p.d?X(p.d):'undefined').join(',')+']';
+    const loc=new Set(pa.pr.map(p=>p.n)),glob=new Set,nl=new Set;if(pa.va)loc.add(pa.va);if(pa.kw)loc.add(pa.kw);
+    const params=new Set(loc);collect(b,loc,glob,nl);
+    const cls=[...fns].reverse().find(f=>f.isClass);
+    sc.push({k:'func',loc,glob,nl,tmp:[]});fns.push({first:pa.pr[0]&&pa.pr[0].n,cls:cls&&cls.cls});
+    const code=body(b),s=sc.pop();fns.pop();
+    const args=pa.pr.map(p=>'v_'+p.n).concat(pa.va?['v_'+pa.va]:[],pa.kw?['v_'+pa.kw]:[]).join(',');
+    const locals=[...loc].filter(v=>!params.has(v)).map(v=>'v_'+v).concat(s.tmp);
+    return'$fn('+J(name)+','+J(pa.pr.map(p=>p.n))+','+defs+','+J(pa.va)+','+J(pa.kw)+',async function('+args+'){const $F={f:'+J(name)+',l:0};if($S.length>200)throw $E("RuntimeError","maximum recursion depth exceeded");$S.push($F);try{let $r'+(locals.length?','+locals.join(','):'')+';'+code+'return null}finally{$S.pop()}})'}
+  const out=body(prog),m=cur();
+  return'let $k=0,$r'+(m.tmp.length?','+m.tmp.join(','):'')+';const $F={f:"<module>",l:0};$S.push($F);try{'+out+'}finally{$S.pop()}'}
+/* ---- exécution ---- */
+async function pyExec(src,repl,file){
+  $FILE=file;
+  const js=pyGen(pyParse(pyLex(src),repl),repl);
+  await new AsyncFn('H','const {'+Object.keys(H).join(',')+'}=H;'+js)(H);
 }
-function py2js(src){
-  const fns=[...src.matchAll(/^\s*def\s+(\w+)/gm)].map(m=>m[1]),res=[],st=[];
-  for(const raw of src.replace(/\t/g,'    ').split('\n')){
-    const code=pyTr(raw,fns).trim();if(!code){res.push('');continue}
-    const ind=raw.match(/^ */)[0].length;let cl='';
-    while(st.length&&ind<=st[st.length-1].ind)cl+=st.pop().def?'};':'}';
-    const inDef=st.some(x=>x.def),open=(t,def)=>{st.push({ind,def,g:new Set()});return cl+t};let m,r;
-    if(m=code.match(/^elif\s+(.*):$/))r=open('else if('+m[1]+'){');
-    else if(/^else\s*:$/.test(code))r=open('else{');
-    else if(m=code.match(/^def\s+(\w+)\s*\((.*)\)\s*:$/))r=open(m[1]+'=async function('+m[2]+'){',1);
-    else if(m=code.match(/^if\s+(.*):$/))r=open('if('+m[1]+'){');
-    else if(m=code.match(/^while\s+(.*):$/))r=open('while(__g()&&('+m[1]+')){');
-    else if(m=code.match(/^for\s+(.+?)\s+in\s+(.+):$/))r=open('for(var '+(m[1].includes(',')?'['+m[1]+']':m[1])+' of '+m[2]+'){');
-    else if(m=code.match(/^global\s+(.*)$/)){const d=[...st].reverse().find(x=>x.def);if(d)m[1].split(',').forEach(n=>d.g.add(n.trim()));r=cl+';'}
-    else if(m=code.match(/^import\s+(\w+)(?:\s+as\s+(\w+))?$/))r=cl+"__imp0('"+m[1]+"'" +(m[2]?",'"+m[2]+"'":'')+');';
-    else if(m=code.match(/^from\s+(\w+)\s+import\s+(.+)$/))r=cl+"__imp('"+m[1]+"','"+m[2].replace(/\s/g,'')+"');";
-    else if(/^pass\b/.test(code))r=cl+';';
-    else if(m=code.match(/^([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*=(?!=)\s*(.*)$/)){
-      const names=m[1].split(',').map(x=>x.trim()),tup=names.length>1,glob=names.some(n=>st.some(x=>x.def&&x.g.has(n)));
-      const rhs=tup&&m[2].includes(',')&&!/[(\[]/.test(m[2])?'['+m[2]+']':m[2];
-      r=cl+(inDef&&!glob?'var ':'')+(tup?'['+m[1]+']':m[1])+'='+rhs+';'}
-    else r=cl+code+';';
-    res.push(r)}
-  if(st.length)res[res.length-1]+=st.reverse().map(x=>x.def?'};':'}').join('');
-  return res.join('\n');
+
+function fmtErr(e,file){
+  if(e.cls===EXC.SyntaxError&&e.ln!==undefined&&!e.tb.length)return'  File "'+file+'", line '+e.ln+'\nSyntaxError: '+e.msg;
+  const fr=e.tb.map(([f,l])=>'  File "'+file+'", line '+l+', in '+f),sh=fr.length>6?[fr[0],'  ...',...fr.slice(-4)]:fr;
+  return'Traceback (most recent call last):\n'+sh.join('\n')+'\n'+e.cls.name+(e.msg!==''?': '+e.msg:'')}
+const H={$c,$g,$add,$sub,$mul,$div,$fdiv,$mod,$pow,$bit,$neg,$pos,$inv,$b,$eq,$lt,$gt,$le,$ge,$in,$is,$iter,$unp,$idx,$slice,$attr,$sidx,$sattr,$del,$dict,$cls,$mkd,$fn,$wrap,$isinst,$raise,$imp,$impn,$impall,$iadd,$show,$y,$fv,$str,$sup,$S,PySet,PyDict,RT,$E:E,$tup:tup};
+return{exec:pyExec,wrap:$wrap,fmtErr,RT,EXC,PyErr,reset:()=>{RT.G=Object.create(null)}};
+})();
+
+/* ===== Console Python (REPL) et exécution de script ===== */
+Object.assign(S,{pi:{t:'',i:0},pml:null,phist:[],phi:0,pcur:''});
+function pyWrite(t){S.pcur=(S.pcur||'')+t;let i;while((i=S.pcur.indexOf('\n'))>=0){S.pout.push(S.pcur.slice(0,i));S.pcur=S.pcur.slice(i+1)}if(S.pout.length>400)S.pout.splice(0,S.pout.length-400)}
+async function pyRunCode(src,repl,file){
+  PY.RT.out=pyWrite;
+  try{await PY.exec(src,repl,file)}
+  catch(e){e=PY.wrap(e);if(!(e.cls&&e.cls.name==='SystemExit')&&!S.pstop)pyWrite(PY.fmtErr(e,file)+'\n')}
+  if(S.pcur){S.pout.push(S.pcur);S.pcur=''}
 }
 async function pyRun(){
   if(S.prun)return;
-  const out=[],M=Math;let cur='',cnt=0;S.pstop=false;
-  const rp=v=>v==null?'None':v===true?'True':v===false?'False':typeof v==='string'?"'"+v+"'":Array.isArray(v)?(v.t?'('+v.map(rp).join(', ')+(v.length===1?',':'')+')':'['+v.map(rp).join(', ')+']'):typeof v==='number'?(Number.isNaN(v)?'nan':v===Infinity?'inf':v===-Infinity?'-inf':String(v)):typeof v==='function'?'<function>':typeof v==='object'?'{'+Object.keys(v).map(k=>rp(k)+': '+rp(v[k])).join(', ')+'}':String(v);
-  const ps=v=>typeof v==='string'?v:rp(v);
-  const printk=(kw,...a)=>{cur+=a.map(ps).join(kw.sep??' ')+(kw.end??'\n');let i;while((i=cur.indexOf('\n'))>=0){out.push(cur.slice(0,i));cur=cur.slice(i+1)}};
-  const cv=S.pcan=document.createElement('canvas');cv.width=320;cv.height=222;const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,320,222);
-  const col=c=>Array.isArray(c)?'rgb('+c.slice(0,3).map(v=>M.max(0,M.min(255,M.round(v)))).join(',')+')':String(c);
-  const kandinsky={color:(r,g,b)=>[r,g,b],fill_rect:(x,y,w,h,c)=>{cx.fillStyle=col(c);cx.fillRect(x,y,w,h)},set_pixel:(x,y,c)=>{cx.fillStyle=col(c);cx.fillRect(x,y,1,1)},get_pixel:(x,y)=>[...cx.getImageData(x,y,1,1).data.slice(0,3)],
-    draw_string:(t,x,y,fg='black',bg='white')=>{cx.font='14px "Courier New",monospace';cx.textBaseline='top';t=ps(t);cx.fillStyle=col(bg);cx.fillRect(x,y,cx.measureText(t).width,16);cx.fillStyle=col(fg);cx.fillText(t,x,y)}};
-  const math={sqrt:M.sqrt,sin:M.sin,cos:M.cos,tan:M.tan,asin:M.asin,acos:M.acos,atan:M.atan,atan2:M.atan2,exp:M.exp,floor:M.floor,ceil:M.ceil,trunc:M.trunc,fabs:M.abs,pi:M.PI,e:M.E,tau:2*M.PI,inf:Infinity,isnan:Number.isNaN,
-    log:(x,b)=>b?M.log(x)/M.log(b):M.log(x),log10:M.log10,log2:M.log2,factorial:n=>{let r=1;for(let i=2;i<=n;i++)r*=i;return r},gcd:(a,b)=>{while(b)[a,b]=[b,a%b];return M.abs(a)},pow:M.pow,hypot:M.hypot,radians:x=>x*M.PI/180,degrees:x=>x*180/M.PI};
-  const random={random:M.random,randint:(a,b)=>a+M.floor(M.random()*(b-a+1)),uniform:(a,b)=>a+M.random()*(b-a),choice:l=>l[M.floor(M.random()*l.length)],randrange:(a,b)=>b===undefined?M.floor(M.random()*a):a+M.floor(M.random()*(b-a)),seed:()=>{}};
-  const time={sleep:async s=>{pyBlit();await new Promise(r=>setTimeout(r,s*1000));pyChk();pyRefresh()},monotonic:()=>performance.now()/1000};
-  const MODS={math,random,time,kandinsky,ion:ION},store={};
-  const BI={Math:M,__ps:ps,printk,print:(...a)=>printk({},...a),__g:()=>{if(++cnt>3e6)throw new Error('Boucle trop longue : arrêt');return true},
-    __t:a=>{a.t=1;return a},__in:(a,b)=>typeof b==='string'?b.includes(a):Array.isArray(b)?b.some(x=>x===a):a in b,
-    __fd:(a,b)=>{if(b===0)throw new Error('ZeroDivisionError: division by zero');return M.floor(a/b)},
-    __mod:(a,b)=>{if(typeof a==='string'){let i=0;const A=Array.isArray(b)?b:[b];return a.replace(/%(\.(\d+))?([dsif%])/g,(m,d,t)=>{if(t==='%')return'%';const v=A[i++];return t==='f'?(+v).toFixed(d===undefined?6:d):t==='s'?ps(v):String(M.trunc(v))})}if(b===0)throw new Error('ZeroDivisionError: modulo by zero');return((a%b)+b)%b},
-    __lc:async(it,c,f)=>{const r=[];for(const v of Array.from(it)){if(!c||await c(v))r.push(await f(v))}return r},
-    __imp0:(m,a)=>{if(!MODS[m])throw new Error("ImportError: no module named '"+m+"'");store[a||m]=MODS[m]},
-    __imp:(m,n)=>{const mod=MODS[m];if(!mod)throw new Error("ImportError: no module named '"+m+"'");(n==='*'?Object.keys(mod):n.split(',')).forEach(k=>{if(!(k in mod))throw new Error("ImportError: cannot import name '"+k+"'");store[k]=mod[k]})},
-    len:x=>x.length!==undefined?x.length:Object.keys(x).length,
-    range:(a,b,c)=>{if(b===undefined){b=a;a=0}c=c||1;const r=[];for(let i=a;c>0?i<b:i>b;i+=c)r.push(i);return r},
-    int:x=>{const v=typeof x==='string'?parseInt(x,10):M.trunc(x);if(Number.isNaN(v))throw new Error("ValueError: invalid literal for int()");return v},float:x=>{const v=Number(x);if(Number.isNaN(v))throw new Error('ValueError: could not convert string to float');return v},
-    str:ps,bool:x=>!!x&&!(Array.isArray(x)&&!x.length),list:x=>[...x],tuple:x=>{const a=[...x];a.t=1;return a},abs:M.abs,sum:l=>l.reduce((s,x)=>s+x,0),pow:M.pow,
-    min:(...a)=>M.min(...(a.length==1?a[0]:a)),max:(...a)=>M.max(...(a.length==1?a[0]:a)),any:l=>l.some(Boolean),all:l=>l.every(Boolean),chr:String.fromCharCode,ord:s=>s.charCodeAt(0),divmod:(a,b)=>{if(b===0)throw new Error('ZeroDivisionError: division by zero');const q=M.floor(a/b);return BI.__t([q,a-q*b])},
-    round:(x,n=0)=>{const v=x*10**n;let r=M.round(v);if(M.abs(v-M.trunc(v))===.5&&r%2!==0)r--;return n?r/10**n:r},
-    sorted:l=>[...l].sort(),reversed:l=>[...l].reverse(),enumerate:l=>[...l].map((x,i)=>BI.__t([i,x])),zip:(a,b)=>[...a].map((x,i)=>BI.__t([x,b[i]])).slice(0,M.min(a.length,b.length)),input:p=>prompt(p)||''};
-  Object.assign(BI,MODS);
-  const env=new Proxy(store,{has:()=>true,get:(t,k)=>{if(typeof k==='symbol')return undefined;if(k in t)return t[k];if(k in BI)return BI[k];throw new Error("NameError: name '"+k+"' is not defined")}});
-  S.pcv=/kandinsky/.test(S.y.t);S.pshow='cv';S.pout=out;S.pym='out';S.prun=true;render();
-  let fn;try{fn=new AsyncFn('__e','with(__e){'+py2js(S.y.t)+'\n}')}catch(e){out.push('Erreur de syntaxe : '+e.message)}
-  if(fn)try{await fn(env)}catch(e){
-    let msg=e.message||String(e);if(e instanceof RangeError)msg='RecursionError: maximum recursion depth exceeded';
-    const ln=e instanceof RangeError?0:(String(e.stack).match(/<anonymous>:(\d+):\d+/)||[])[1];
-    if(msg!=='KeyboardInterrupt')out.push('Erreur'+(ln?' (ligne '+(ln-2)+')':'')+' : '+msg)}
-  if(cur)out.push(cur);
-  if(!out.length&&!S.pcv)out.push('(aucune sortie)');
+  S.pstop=false;PY.reset();
+  const cv=S.pcan=document.createElement('canvas');cv.width=320;cv.height=222;
+  const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,320,222);PY.RT.cv=cv;
+  S.pcv=/kandinsky/.test(S.y.t);S.pshow='cv';S.pout=[];S.pcur='';S.pym='out';S.pi={t:'',i:0};S.pml=null;S.prun=true;render();
+  await pyRunCode(S.y.t,false,'script.py');
   S.prun=false;if(S.app==='py'&&S.pym==='out')render();
 }
+async function pyRepl(){
+  if(S.prun)return;
+  const line=S.pi.t;S.pi={t:'',i:0};
+  if(line.trim())S.phist.push(line);S.phi=S.phist.length;
+  S.pout.push((S.pml?'... ':'>>> ')+line);
+  let src;
+  if(S.pml){if(line.trim()===''){src=S.pml.join('\n');S.pml=null}else{S.pml.push(line);return render()}}
+  else if(/:\s*$/.test(line)||/[(\[{,]\s*$/.test(line)){S.pml=[line];return render()}
+  else src=line;
+  if(!src.trim())return render();
+  S.prun=true;S.pstop=false;render();
+  await pyRunCode(src,true,'<stdin>');
+  S.prun=false;if(S.app==='py'&&S.pym==='out')render();
+}
+function pyHist(a){const h=S.phist;if(!h.length)return;S.phi=a==='UP'?Math.max(0,S.phi-1):Math.min(h.length,S.phi+1);const t=h[S.phi]||'';S.pi={t,i:t.length}}
+
 /* ===== Inférence & Finance ===== */
 const erf=x=>{const a=Math.abs(x);let r;if(a<3){let t=a,s=a;for(let n=1;n<80;n++){t*=-a*a/n;s+=t/(2*n+1)}r=2/Math.sqrt(Math.PI)*s}else{const q=a*a;r=1-Math.exp(-q)/(a*Math.sqrt(Math.PI))*(1-1/(2*q)+3/(4*q*q)-15/(8*q**3)+105/(16*q**4))}return x<0?-r:r};
 const Phi=z=>(1+erf(z/Math.SQRT2))/2;
@@ -919,7 +1486,13 @@ function press(a,ex){
   if(S.app==='api_config')return render();
   if(S.app==='elem')return elemKey(a);
   if((S.app==='inf'||S.app==='fin')&&S.nm<0){const m=MENUS[S.app];if(a==='UP')S.msel=Math.max(0,S.msel-1);else if(a==='DOWN')S.msel=Math.min(m.length-1,S.msel+1);else if(a==='OK'||a==='EXE'){S.nm=S.msel;S.nr=null;S.n={t:'',i:0}}return render()}
-  if(S.app==='py'&&S.pym==='out'){if((a==='OK'||a==='EXE')&&!S.prun){if(S.pcv)S.pshow=S.pshow==='cv'?'txt':'cv';else pyRun()}return render()}
+  if(S.app==='py'&&S.pym==='out'){
+    if(S.prun)return render();
+    if(S.pcv&&S.pshow==='cv'){if(a==='OK'||a==='EXE')S.pshow='txt';return render()}
+    if(a==='OK'&&S.pcv){S.pshow='cv';return render()}
+    if(a==='EXE'||a==='OK')return pyRepl();
+    if(a==='UP'||a==='DOWN'){pyHist(a);return render()}
+  }
   if(S.app==='wiki'&&(S.wiki.view==='read'||a==='UP'||a==='DOWN'||a==='OK'||a==='EXE'))return wikiKey(a);
   if((S.app==='youtube'||S.app==='google')&&((S.app==='youtube'?S.youtube:S.google).view!=='list'||a==='UP'||a==='DOWN'||a==='OK'||a==='EXE'))return webKey(a);
   if(!IMPL.includes(S.app))return;
@@ -990,7 +1563,7 @@ document.getElementById('keys').onclick=e=>{const b=e.target.closest('button');i
 document.addEventListener('keydown',e=>{
   if(e.target&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))return;
   const m={ArrowUp:'UP',ArrowDown:'DOWN',ArrowLeft:'LEFT',ArrowRight:'RIGHT',Enter:'EXE',Backspace:'DEL',Escape:'HOME','*':'×','/':'÷','-':'−','^':'^','=':'='};
-  if(((S.app==='py'&&S.pym==='edit')||(S.app==='wiki'&&S.wiki.view==='list')||(S.app==='youtube'&&S.youtube.view==='list')||(S.app==='google'&&S.google.view==='list'))&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(e.key==='Tab'){e.preventDefault();return press('    ')}if(e.key.length===1){e.preventDefault();return press(e.key)}}
+  if(((S.app==='py'&&(S.pym==='edit'||(S.pym==='out'&&!S.prun&&!(S.pcv&&S.pshow==='cv'))))||(S.app==='wiki'&&S.wiki.view==='list')||(S.app==='youtube'&&S.youtube.view==='list')||(S.app==='google'&&S.google.view==='list'))&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(e.key==='Tab'){e.preventDefault();return press('    ')}if(e.key.length===1){e.preventDefault();return press(e.key)}}
   const a=m[e.key]||(/^[0-9+().,]$/.test(e.key)?e.key:e.key==='x'?'x':e.key==='p'?'π':'');
   if(a){e.preventDefault();press(a)}
 });
