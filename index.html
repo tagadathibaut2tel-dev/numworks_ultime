@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NumWorks V16</title>
+<title>NumWorks V18</title>
 <style>
 :root{--yellow:#ffb531;--dark:#414141}
 *{box-sizing:border-box}
@@ -175,7 +175,8 @@ const APPS=[
 ['youtube','YouTube',ic(0,'<rect x="4" y="10" width="36" height="24" rx="7" fill="#e62117"/><path d="M19 16l11 6-11 6z" fill="#fff"/>')],
 ['google','Google',ic(0,'<text x="22" y="32" font-size="31" font-family="Arial" font-weight="700" text-anchor="middle" fill="#4285f4">G</text>')],
 ['gemini','Groq IA',ic(1,'<rect x="6" y="6" width="32" height="32" rx="9" fill="#f55036"/><text x="22" y="30" font-size="22" font-weight="700" font-family="Arial" text-anchor="middle" fill="#fff">G</text>')],
-['wiki','Wikipédia',ic(0,'<text x="22" y="32" font-size="30" font-family="Georgia,serif" font-weight="700" text-anchor="middle" fill="#222">W</text>')]];
+['wiki','Wikipédia',ic(0,'<text x="22" y="32" font-size="30" font-family="Georgia,serif" font-weight="700" text-anchor="middle" fill="#222">W</text>')],
+['patate','Patate',ic(0,'<ellipse cx="22" cy="24" rx="16" ry="12" fill="#c8975a" transform="rotate(-15 22 24)"/><circle cx="16" cy="21" r="1.6" fill="#8a5f2d"/><circle cx="25" cy="27" r="1.6" fill="#8a5f2d"/><circle cx="28" cy="20" r="1.3" fill="#8a5f2d"/><circle cx="20" cy="28" r="1.2" fill="#8a5f2d"/>')]];
 
 // État pour les applications web
 Object.assign(S,{
@@ -489,6 +490,8 @@ function render(){
     h=geminiView(bar);
   }else if(S.app==='wiki'){
     h=wikiView(bar);
+  }else if(S.app==='patate'){
+    h=bar('Patate')+'<div style="flex:1;min-height:0;position:relative;background:#000"><iframe src="https://www.youtube.com/embed/CwhHyd-g8_0?autoplay=1&rel=0&playsinline=1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="width:100%;height:100%;border:0;display:block"></iframe><div style="position:absolute;left:0;right:0;top:0;height:20px;background:#000;pointer-events:none"></div></div>';
   }else if(S.app==='py')h=pyView(bar);else if(S.app==='inf'||S.app==='fin')h=menuView(bar);else if(S.app==='elem')h=elemView(bar);
   else if(S.app==='api_config')h=apiConfigView(bar);
   else h=bar(S.app)+'<div class="body" style="justify-content:center;align-items:center;text-align:center;font-family:Helvetica,Arial,sans-serif;font-size:11px">Application non disponible<br><span style="font-size:9px;color:#888">pas encore implémentée</span></div>';
@@ -664,11 +667,11 @@ function pySave(){try{localStorage.setItem('nw_py',S.y.t)}catch(e){}}
 function pyPos(){const b=S.y,ls=b.t.split('\n');let p=0,l=0;while(l<ls.length-1&&b.i>p+ls[l].length){p+=ls[l].length+1;l++}return{ls,l,p,c:b.i-p}}
 function pyMove(a){const{ls,l,c}=pyPos(),l2=l+(a==='UP'?-1:1);if(l2<0||l2>=ls.length)return;let st=0;for(let k=0;k<l2;k++)st+=ls[k].length+1;S.y.i=st+Math.min(c,ls[l2].length)}
 function pyView(bar){
-  if(S.pym==='out'&&S.pcv&&S.pshow==='cv')return '<canvas id="pycv" width="320" height="222" style="position:absolute;inset:0;width:320px;height:222px;z-index:5"></canvas>';
+  if(S.pym==='out'&&S.pcv&&S.pshow==='cv')return '<canvas id="pycv" width="320" height="222" style="position:absolute;inset:0;width:320px;height:222px;z-index:5"></canvas><div style="position:absolute;right:4px;bottom:2px;z-index:6;font:8px Helvetica,Arial,sans-serif;color:#999">OK : console · BACK : éditeur</div>';
   if(S.pym==='out'){const txt=S.pout.slice(-40).map(esc).join('\n')+(S.pcur?'\n'+esc(S.pcur):'');
     return bar('Console · BACK : script')+'<div class="body" style="font-size:10px;line-height:12px;white-space:pre-wrap;overflow:hidden;justify-content:flex-end;font-family:Consolas,Menlo,monospace">'+(txt?'<div>'+txt+'</div>':'')+(S.prun?'':'<div>'+(S.pml?'... ':'&gt;&gt;&gt; ')+line(S.pi)+'</div>')+'</div>'}
-  const{ls,l,c}=pyPos(),st=Math.max(0,l-11);
-  return bar('Script · OK : exécuter')+'<div class="body" style="justify-content:flex-start;font-size:10px;line-height:13px;white-space:pre;padding:3px 6px">'+ls.slice(st,st+14).map((x,k)=>st+k===l?esc(x.slice(0,c))+'<span class="cu"></span>'+esc(x.slice(c)):(esc(x)||' ')).join('\n')+'</div>';
+  const{ls,l,c}=pyPos(),H=12,st=Math.max(0,Math.min(l-5,ls.length-H)),W=String(ls.length).length;
+  return bar('Script Python')+'<div class="body" style="justify-content:flex-start;font-size:10px;line-height:13px;white-space:pre;padding:3px 6px 0;font-family:Consolas,Menlo,monospace"><div>'+ls.slice(st,st+H).map((x,k)=>{const n=st+k;return'<span style="color:#bbb">'+String(n+1).padStart(W)+' </span>'+(n===l?esc(x.slice(0,c))+'<span class="cu"></span>'+esc(x.slice(c)):esc(x))}).join('\n')+'</div></div><div style="flex:none;font:8px Helvetica,Arial,sans-serif;color:#888;padding:2px 6px;border-top:1px solid #eee;background:#fafafa">EXE : nouvelle ligne · OK : exécuter · toolbox : insérer</div>';
 }
 /* ===== Moteur Python v2 : traduction vers JavaScript asynchrone ===== */
 const AsyncFn=Object.getPrototypeOf(async function(){}).constructor;
@@ -1339,6 +1342,7 @@ async function pyRun(){
   const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,320,222);PY.RT.cv=cv;
   S.pcv=/kandinsky/.test(S.y.t);S.pshow='cv';S.pout=[];S.pcur='';S.pym='out';S.pi={t:'',i:0};S.pml=null;S.prun=true;render();
   await pyRunCode(S.y.t,false,'script.py');
+  if(S.pcv&&S.pout.some(l=>/^(Traceback|SyntaxError)/.test(l)))S.pshow='txt';
   S.prun=false;if(S.app==='py'&&S.pym==='out')render();
 }
 async function pyRepl(){
@@ -1421,6 +1425,7 @@ const TB_PY=[
  ['Opérateurs',[mk('==','Égal','=='),mk('!=','Différent','!='),mk('<','Inférieur','<'),mk('>','Supérieur','>'),mk('<=','Inférieur ou égal','<='),mk('>=','Supérieur ou égal','>='),mk('and','Et','and '),mk('or','Ou','or '),mk('not','Non','not '),mk('in','Appartient à','in '),mk('//','Quotient entier','//'),mk('%','Reste','%'),mk('**','Puissance','**'),mk('+=','Ajouter à','+=')]],
  ['Caractères',[mk(':','Deux-points',':'),mk(';','Point-virgule',';'),mk('"','Guillemets','"¦"'),mk("'",'Apostrophes',"'¦'"),mk('[ ]','Liste','[¦]'),mk('{ }','Dictionnaire','{¦}'),mk('_','Tiret bas','_'),mk('#','Commentaire','#'),mk('=','Affectation','=')]]
 ];
+TB_PY[0][1].forEach(m=>m[1].forEach(it=>{if(!/^(import|from) /.test(it[2]))it[3]=m[0]}));
 const tbOpen=(title,items)=>{S.tb={stack:[{title,items,i:0,st:0}]}};
 const tbIsMenu=x=>Array.isArray(x[1]);
 function tbKey(a){
@@ -1429,7 +1434,13 @@ function tbKey(a){
   if(a==='UP')T.i=Math.max(0,T.i-1);else if(a==='DOWN')T.i=Math.min(it.length-1,T.i+1);
   else if(a==='OK'||a==='EXE'||a==='RIGHT'){const x=it[T.i];if(!x)return;
     if(tbIsMenu(x))S.tb.stack.push({title:x[0],items:x[1],i:0,st:0});
-    else if(a!=='RIGHT'||true){const b=buf(),t=x[2],k=t.indexOf('¦'),tx=t.replace('¦','');b.t=b.t.slice(0,b.i)+tx+b.t.slice(b.i);b.i+=k>=0?k:tx.length;S.tb=null;if(S.app==='py')pySave()}}
+    else{const b=buf();let t=x[2];
+      if(x[3]&&S.app==='py'&&S.pym==='edit'){const src=S.y.t,mod=x[3];let m;
+        if(new RegExp('^\\s*from\\s+'+mod+'\\s+import','m').test(src)){}
+        else if(m=src.match(new RegExp('^\\s*import\\s+'+mod+'\\s+as\\s+(\\w+)','m')))t=m[1]+'.'+t;
+        else if(new RegExp('^\\s*import\\s+'+mod+'\\b','m').test(src))t=mod+'.'+t;
+        else{const hdr='from '+mod+' import *\n';S.y.t=hdr+S.y.t;S.y.i+=hdr.length}}
+      const k=t.indexOf('¦'),tx=t.replace('¦','');b.t=b.t.slice(0,b.i)+tx+b.t.slice(b.i);b.i+=k>=0?k:tx.length;S.tb=null;if(S.app==='py')pySave()}}
   else return;
   render();
 }
@@ -1512,7 +1523,7 @@ function press(a,ex){
   if(a==='@paste'){const c=S.clip||'';b.t=b.t.slice(0,b.i)+c+b.t.slice(b.i);b.i+=c.length;return render()}
   if(a==='@clear'){b.t='';b.i=0;return render()}
   if(S.app==='py'){
-    if(a==='EXE'){const m=b.t.slice(0,b.i).split('\n').pop(),ind=m.match(/^ */)[0]+(/:\s*$/.test(m)?'    ':'');b.t=b.t.slice(0,b.i)+'\n'+ind+b.t.slice(b.i);b.i+=1+ind.length;pySave();return render()}
+    if(a==='EXE'){{const rest=b.t.slice(b.i).split('\n')[0];if(rest&&/^[)\]}]+$/.test(rest))b.i+=rest.length}const m=b.t.slice(0,b.i).split('\n').pop(),ind=m.match(/^ */)[0]+(/:\s*$/.test(m)?'    ':'');b.t=b.t.slice(0,b.i)+'\n'+ind+b.t.slice(b.i);b.i+=1+ind.length;pySave();return render()}
     if(a==='OK'){pyRun();return render()}
     if(a==='UP'||a==='DOWN')pyMove(a);
   }
@@ -1520,7 +1531,7 @@ function press(a,ex){
   else if(a==='RIGHT')b.i=Math.min(b.t.length,b.i+1);
   else if(a==='UP'&&S.app==='calc'&&S.hist.length){b.t=S.hist[S.hist.length-1].e;b.i=b.t.length}
   else if(a==='DEL'){
-    if(b.i>0){b.t=b.t.slice(0,b.i-1)+b.t.slice(b.i);b.i--}
+    if(b.i>0){const pr=b.t[b.i-1],nx=b.t[b.i],pair=S.app==='py'&&((pr==='('&&nx===')')||(pr==='['&&nx===']')||(pr==='{'&&nx==='}'));b.t=b.t.slice(0,b.i-1)+b.t.slice(b.i+(pair?1:0));b.i--}
     else if(S.app==='stats')S.st.pop();
     else if(S.app==='reg')S.pts.pop();
   }else if(a==='EXE'||a==='OK'){
@@ -1537,7 +1548,9 @@ function press(a,ex){
     else if(S.app==='proba'){S.pres=binom(b.t)}
     else if(S.app==='reg'){const q=b.t.split(',').map(v=>ev(v));if(q.length===2&&q.every(Number.isFinite))S.pts.push(q);b.t='';b.i=0}
   }else if(a!=='UP'&&a!=='DOWN'){
-    b.t=b.t.slice(0,b.i)+a+b.t.slice(b.i);b.i+=a.length;
+    if(S.app==='py'&&(a===')'||a===']'||a==='}')&&b.t[b.i]===a){b.i++}
+    else if(S.app==='py'&&(a==='('||a==='['||a==='{')){const cl={'(':')','[':']','{':'}'}[a];b.t=b.t.slice(0,b.i)+a+cl+b.t.slice(b.i);b.i++}
+    else{b.t=b.t.slice(0,b.i)+a+b.t.slice(b.i);b.i+=a.length}
   }
   if(S.app==='py')pySave();render();
 }
